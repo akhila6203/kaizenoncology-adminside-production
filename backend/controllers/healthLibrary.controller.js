@@ -1,7 +1,8 @@
 const HealthLibrary = require("../models/healthLibrary.model");
 const { randomUUID } = require("crypto");
 const path = require("path");
-const fs = require("fs/promises");
+const fs = require("fs");
+const fsp = require("fs/promises");
 const { sendHealthEnquiryEmail } = require("../services/mail.service");
 const TYPES = ["estimate", "contact", "callback"];
 const parse = (x) => {
@@ -220,13 +221,13 @@ exports.remove = async (req, res, next) => {
     const reports = parse(row.previous_reports);
     if (Array.isArray(reports))
       await Promise.allSettled(
-        reports.map((r) =>
-          fs.unlink(
-            path.join(
-              __dirname,
-              "../private_uploads/health-library",
-              path.basename(r.filename || ""),
-            ),
+  reports.map((r) =>
+    fsp.unlink(
+           path.join(
+  __dirname,
+  "../uploads/health-library",
+  path.basename(r.filename || ""),
+)
           ),
         ),
       );
@@ -252,14 +253,20 @@ exports.downloadReport = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Report not found" });
     const r = reports[i];
-    res.download(
-      path.join(
-        __dirname,
-        "../private_uploads/health-library",
-        path.basename(r.filename),
-      ),
-      r.name,
-    );
+   const filePath = path.join(
+  __dirname,
+  "../uploads/health-library",
+  path.basename(r.filename)
+);
+
+if (!fs.existsSync(filePath)) {
+  return res.status(404).json({
+    success: false,
+    message: "Report file not found. Please upload it again.",
+  });
+}
+
+return res.download(filePath, r.name);
   } catch (e) {
     next(e);
   }

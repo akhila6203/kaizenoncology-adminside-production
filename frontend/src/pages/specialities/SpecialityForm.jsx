@@ -16,7 +16,7 @@ const empty = {
   is_active: true,
   highlights: [''],
   subspecialities: [''],
-  ailments: '',
+  ailments: [{ title: '', description: '' }],
 };
 
 const quillModules = {
@@ -52,16 +52,32 @@ export default function SpecialityForm({ open, id, onClose, onSaved }) {
     specialitiesApi.get(id).then((res) => {
       const d = res.data.data;
       // Old records stored ailments as an array: convert to a bullet list
-      const ailmentsHtml = Array.isArray(d.ailments)
-        ? (d.ailments.length ? `<ul>${d.ailments.map((a) => `<li>${a}</li>`).join('')}</ul>` : '')
-        : (d.ailments || '');
+      // const ailmentsHtml = Array.isArray(d.ailments)
+      //   ? (d.ailments.length ? `<ul>${d.ailments.map((a) => `<li>${a}</li>`).join('')}</ul>` : '')
+      //   : (d.ailments || '');
+      // Support both old array data and new rich HTML content
+let ailmentsHtml = '';
+const ailmentsRows = Array.isArray(d.ailments)
+  ? d.ailments.map((item) =>
+      typeof item === 'string'
+        ? { title: item, description: '' }
+        : {
+            title: item.title || '',
+            description: item.description || '',
+          }
+    )
+  : [{ title: '', description: '' }];
+
       setForm({
         ...empty,
         ...d,
         is_active: Boolean(d.is_active),
         highlights: d.highlights?.length ? d.highlights : [''],
         subspecialities: d.subspecialities?.length ? d.subspecialities : [''],
-        ailments: ailmentsHtml,
+        // ailments: ailmentsHtml,
+        ailments: ailmentsRows.length
+  ? ailmentsRows
+  : [{ title: '', description: '' }],
       });
       setExisting(mediaUrl(d.about_image));
     });
@@ -85,7 +101,11 @@ export default function SpecialityForm({ open, id, onClose, onSaved }) {
         is_active: form.is_active,
         highlights: form.highlights.filter(Boolean),
         subspecialities: form.subspecialities.filter(Boolean),
-        ailments: cleanHtml(form.ailments),
+        // ailments: cleanHtml(form.ailments),
+        ailments: form.ailments.filter(
+  (item) =>
+    item.title.trim() || item.description.trim()
+),
       }, 'about_image', file);
       if (id) await specialitiesApi.update(id, payload);
       else await specialitiesApi.create(payload);
@@ -116,7 +136,7 @@ export default function SpecialityForm({ open, id, onClose, onSaved }) {
         </div>
         <RepeatableList label="Key highlights" values={form.highlights} onChange={(v) => set('highlights', v)} placeholder="Highlight" />
         <RepeatableList label="Sub specialities" values={form.subspecialities} onChange={(v) => set('subspecialities', v)} placeholder="Sub speciality" />
-        <div className="full">
+        {/* <div className="full">
           <label>Ailments</label>
           <ReactQuill
             theme="snow"
@@ -125,7 +145,79 @@ export default function SpecialityForm({ open, id, onClose, onSaved }) {
             modules={quillModules}
             placeholder="Describe the ailments treated"
           />
-        </div>
+        </div> */}
+        <div className="full">
+  <label>Ailments</label>
+
+  {(form.ailments?.length
+    ? form.ailments
+    : [{ title: '', description: '' }]
+  ).map((item, index) => (
+    // <div className="repeat-row" key={index}>
+    <div className="ailment-row" key={index}>
+      <input
+      className="ailment-title"
+        value={item.title}
+        placeholder="Ailment heading"
+        onChange={(e) => {
+          const updated = [...form.ailments];
+          updated[index] = {
+            ...updated[index],
+            title: e.target.value,
+          };
+          set('ailments', updated);
+        }}
+      />
+
+      <textarea
+  className="ailment-description"
+  value={item.description}
+  placeholder="Ailment description"
+  rows={2}
+  onChange={(e) => {
+    const updated = [...form.ailments];
+    updated[index] = {
+      ...updated[index],
+      description: e.target.value,
+    };
+    set('ailments', updated);
+  }}
+/>
+
+      <button
+        // className="btn secondary small"
+        className="btn secondary small ailment-remove"
+        type="button"
+        onClick={() => {
+          const updated = form.ailments.filter(
+            (_, i) => i !== index
+          );
+          set(
+            'ailments',
+            updated.length
+              ? updated
+              : [{ title: '', description: '' }]
+          );
+        }}
+      >
+        Remove
+      </button>
+    </div>
+  ))}
+
+  <button
+    className="btn secondary small"
+    type="button"
+    onClick={() =>
+      set('ailments', [
+        ...form.ailments,
+        { title: '', description: '' },
+      ])
+    }
+  >
+    Add row
+  </button>
+</div>
         <label className="check">
           <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} />
           Active

@@ -16,7 +16,7 @@ const router = express.Router();
 
 const dir = path.join(
   __dirname,
-  "../private_uploads/health-library"
+  "../uploads/health-library"
 );
 
 fs.mkdirSync(dir, { recursive: true });

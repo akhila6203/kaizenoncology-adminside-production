@@ -262,10 +262,20 @@ CREATE TABLE IF NOT EXISTS faqs (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- CREATE TABLE IF NOT EXISTS speciality_ailment_items (
+--   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+--   speciality_id INT UNSIGNED NOT NULL,
+--   name VARCHAR(220) NOT NULL,
+--   sort_order INT NOT NULL DEFAULT 0,
+--   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--   CONSTRAINT fk_sai_speciality FOREIGN KEY (speciality_id) REFERENCES specialities(id) ON DELETE CASCADE
+-- ) ENGINE=InnoDB;
+
 CREATE TABLE IF NOT EXISTS speciality_ailment_items (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   speciality_id INT UNSIGNED NOT NULL,
-  name VARCHAR(220) NOT NULL,
+  title VARCHAR(220) NOT NULL,
+  description TEXT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_sai_speciality FOREIGN KEY (speciality_id) REFERENCES specialities(id) ON DELETE CASCADE
@@ -418,3 +428,13 @@ CREATE TABLE IF NOT EXISTS patient_activity_logs (
  INDEX idx_patient_activity_customer(customer_id),
  FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+
+
+-- ALTER TABLE speciality_ailment_items
+--   CHANGE COLUMN name title VARCHAR(220) NOT NULL,
+--   ADD COLUMN description TEXT NULL AFTER title;
+
+-- ALTER TABLE doctors
+-- ADD COLUMN about LONGTEXT DEFAULT NULL,
+-- ADD COLUMN academics_achievements LONGTEXT DEFAULT NULL;

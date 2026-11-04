@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import DataTable from '../../components/DataTable';
 import Pagination from '../../components/Pagination';
@@ -45,27 +46,110 @@ export default function StoryList() {
         : '—',
     },
     {
-      key: 'actions',
-      label: 'Actions',
-      render: (r) => (
-        <div className="actions">
-          <button className="btn secondary small" type="button" onClick={() => openEdit(r.id)}>Edit</button>
-          <button className="btn danger small" type="button" onClick={() => setDeleting(r)}>Delete</button>
-        </div>
-      ),
-    },
+  key: 'actions',
+  label: 'Actions',
+  render: (r) => (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+      }}
+    >
+      {/* EDIT ICON */}
+      <button
+        type="button"
+        title="Edit Story"
+        aria-label={`Edit ${r.patient_name}`}
+        onClick={() => openEdit(r.id)}
+        style={{
+          width: '34px',
+          height: '34px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #cfe2e0',
+          borderRadius: '7px',
+          background: '#f0f8f7',
+          color: '#064b50',
+          cursor: 'pointer',
+        }}
+      >
+        <Pencil size={16} />
+      </button>
+
+      {/* DELETE ICON */}
+      <button
+        type="button"
+        title="Delete Story"
+        aria-label={`Delete ${r.patient_name}`}
+        onClick={() => setDeleting(r)}
+        style={{
+          width: '34px',
+          height: '34px',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #fecaca',
+          borderRadius: '7px',
+          background: '#fef2f2',
+          color: '#dc2626',
+          cursor: 'pointer',
+        }}
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
+  ),
+},
+    // {
+    //   key: 'actions',
+    //   label: 'Actions',
+    //   render: (r) => (
+    //     <div className="actions">
+    //       <button className="btn secondary small" type="button" onClick={() => openEdit(r.id)}>Edit</button>
+    //       <button className="btn danger small" type="button" onClick={() => setDeleting(r)}>Delete</button>
+    //     </div>
+    //   ),
+    // },
   ];
 
   return (
     <div>
-      <div className="page-head">
+      {/* SEARCH + ADD NEW */}
+<div className="toolbar-row">
+
+  {/* LEFT SIDE */}
+  <form className="toolbar" onSubmit={onSearch}>
+    <input
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Search stories..."
+    />
+
+    <button className="btn secondary" type="submit">
+      Search
+    </button>
+  </form>
+
+  {/* RIGHT SIDE */}
+  <button
+    className="btn"
+    type="button"
+    onClick={openAdd}
+  >
+    Add New
+  </button>
+
+</div>
+      {/* <div className="page-head">
         <h1>Our Stories</h1>
         <button className="btn" type="button" onClick={openAdd}>Add New</button>
       </div>
       <form className="toolbar" onSubmit={onSearch}>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search stories..." />
         <button className="btn secondary" type="submit">Search</button>
-      </form>
+      </form> */}
       <DataTable columns={columns} rows={rows} />
       <Pagination page={page} limit={limit} total={total} onPage={setPage} />
       <ConfirmDeleteModal title={deleting?.patient_name} onClose={() => setDeleting(null)} onConfirm={confirmDelete} />

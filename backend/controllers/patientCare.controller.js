@@ -1,15 +1,19 @@
 const db = require("../config/db");
 const fs = require("fs");
 const path = require("path");
-const PRIVATE_DIR = path.join(__dirname, "../private-patient-files");
+// const PRIVATE_DIR = path.join(__dirname, "../private-patient-files");
+const UPLOAD_DIR = path.join(__dirname, "../uploads/patient-care");
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+
 const PATIENT_EDIT = new Set([
   "personal",
   "passport",
   "medical",
 ]);
+
 const STAFF_EDIT = new Set([
   "visa",
-  "medical",
   "treatment",
   "hospital",
   "stay",
@@ -18,6 +22,7 @@ const STAFF_EDIT = new Set([
   "payments",
   "journey",
 ]);
+
 const PUBLIC_SECTIONS = [
   "personal",
   "passport",
@@ -31,7 +36,7 @@ const PUBLIC_SECTIONS = [
 ];
 const STAFF_SECTIONS = [...PUBLIC_SECTIONS, "payments", "journey"];
 const PATIENT_KEYS = {
-  personal: [
+   personal: [
     "fullName",
     "dob",
     "gender",
@@ -42,6 +47,7 @@ const PATIENT_KEYS = {
     "emergencyRelation",
     "emergencyPhone",
   ],
+
   passport: [
     "passportNumber",
     "citizenship",
@@ -125,26 +131,40 @@ async function profile(id, staff = false) {
   );
   if (!customer) return null;
   const sections = {};
-  for (const key of staff ? STAFF_SECTIONS : PUBLIC_SECTIONS) {
-    const value = parse(row[key]);
-    if (!staff && key === "medical") delete value.doctorNotes;
-    if (!staff && key === "visa") {
-      delete value.internalRemarks;
-    }
-    sections[key] = value;
+ 
+ 
+for (const key of staff ? STAFF_SECTIONS : PUBLIC_SECTIONS) {
+  const value = parse(row[key]);
+
+  if (!staff && key === "medical") {
+    delete value.doctorNotes;
   }
+
+  if (!staff && key === "visa") {
+    delete value.internalRemarks;
+  }
+
+  sections[key] = value;
+}
+
   const [docs] = await db.query(
     "SELECT id,section_id AS sectionId,category,original_name AS name,mime_type AS type,file_size AS size,created_at AS date FROM patient_documents WHERE customer_id=? ORDER BY id DESC",
     [id],
   );
+  // return {
+  //   customer,
+  //   patientId: row.patient_number,
+  //   sections,
+  //   documents: docs.filter(
+  //     (d) => staff || !["payments", "journey"].includes(d.sectionId),
+  //   ),
+  // };
   return {
-    customer,
-    patientId: row.patient_number,
-    sections,
-    documents: docs.filter(
-      (d) => staff || !["payments", "journey"].includes(d.sectionId),
-    ),
-  };
+  customer,
+  patientId: row.patient_number,
+  sections,
+  documents: docs,
+};
 }
 exports.me = async (req, res, next) => {
   try {
@@ -201,17 +221,21 @@ exports.update = async (req, res, next) => {
     const old = parse(row.data);
     let updated;
     if (staff) {
-      updated = { ...old, ...input };
-    } else {
-      updated = { ...old };
-      for (const k of PATIENT_KEYS[section])
-        if (
-          Object.hasOwn(input, k) &&
-          typeof input[k] === "string" &&
-          input[k].length <= 5000
-        )
-          updated[k] = input[k];
+  updated = { ...old, ...input };
+} else {
+  updated = { ...old };
+
+  for (const k of PATIENT_KEYS[section] || []) {
+    if (
+      Object.hasOwn(input, k) &&
+      typeof input[k] === "string" &&
+      input[k].length <= 5000
+    ) {
+      updated[k] = input[k];
     }
+  }
+}
+   
     await db.query(
       `UPDATE patient_profiles SET \`${section}\`=? WHERE customer_id=?`,
       [JSON.stringify(updated), id],
@@ -268,7 +292,16 @@ if (
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: "Invalid patient" });
     }
-    const category = String(req.body.category || "Other").slice(0, 100);
+    // const category = String(req.body.category || "Other").slice(0, 100);
+    const category = String(req.body.category || "").trim().slice(0, 100);
+
+if (!category) {
+  fs.unlink(req.file.path, () => {});
+  return res.status(400).json({
+    message: "Document category is required",
+  });
+}
+
     const [result] = await db.query(
       "INSERT INTO patient_documents(customer_id,section_id,category,original_name,stored_name,mime_type,file_size,uploaded_by_type,uploaded_by_id) VALUES(?,?,?,?,?,?,?,?,?)",
       [
@@ -314,8 +347,13 @@ exports.download = async (req, res, next) => {
       "SELECT * FROM patient_documents WHERE id=? AND customer_id=?",
       [req.params.documentId, id],
     );
-    if (!doc || (!staff && ["payments", "journey"].includes(doc.section_id)))
-      return res.status(404).json({ message: "Document not found" });
+    // if (!doc || (!staff && ["payments", "journey"].includes(doc.section_id)))
+    //   return res.status(404).json({ message: "Document not found" });
+    if (!doc) {
+  return res.status(404).json({
+    message: "Document not found",
+  });
+}
     await audit(
       id,
       staff ? "admin" : "patient",
@@ -330,7 +368,15 @@ exports.download = async (req, res, next) => {
       "Content-Disposition",
       `attachment; filename="${doc.original_name.replace(/["\r\n]/g, "_")}"`,
     );
-    res.sendFile(path.join(PRIVATE_DIR, doc.stored_name));
+   const filePath = path.join(UPLOAD_DIR, doc.stored_name);
+
+if (!fs.existsSync(filePath)) {
+  return res.status(404).json({
+    message: "File not found. Please upload the document again.",
+  });
+}
+
+return res.sendFile(filePath);
   } catch (e) {
     next(e);
   }
@@ -350,7 +396,15 @@ exports.remove = async (req, res, next) => {
     )
       return res.status(403).json({ message: "Not allowed" });
     await db.query("DELETE FROM patient_documents WHERE id=?", [doc.id]);
-    fs.unlink(path.join(PRIVATE_DIR, doc.stored_name), () => {});
+    // fs.unlink(path.join(PRIVATE_DIR, doc.stored_name), () => {});
+   const filePath = path.join(UPLOAD_DIR, path.basename(doc.stored_name));
+
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== "ENOENT") {
+      console.error("Patient document delete error:", err);
+    }
+  });
+  
     await audit(
       id,
       staff ? "admin" : "patient",

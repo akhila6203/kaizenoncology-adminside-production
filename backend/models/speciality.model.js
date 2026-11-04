@@ -21,8 +21,8 @@ const Speciality = {
          FROM speciality_highlights h WHERE h.speciality_id = sp.id) AS highlights_text,
         (SELECT GROUP_CONCAT(ss.name ORDER BY ss.sort_order SEPARATOR ', ')
          FROM speciality_subspecialities ss WHERE ss.speciality_id = sp.id) AS subspecialities_text,
-        (SELECT GROUP_CONCAT(ai.name ORDER BY ai.sort_order SEPARATOR ', ')
-         FROM speciality_ailment_items ai WHERE ai.speciality_id = sp.id) AS ailments_text
+        (SELECT GROUP_CONCAT(ai.title ORDER BY ai.sort_order SEPARATOR ', ')
+ FROM speciality_ailment_items ai WHERE ai.speciality_id = sp.id) AS ailments_text
        FROM specialities sp ${clause}
        ORDER BY sp.sort_order ASC, sp.name ASC
        LIMIT ? OFFSET ?`,
@@ -43,15 +43,28 @@ const Speciality = {
       'SELECT name FROM speciality_subspecialities WHERE speciality_id = ? ORDER BY sort_order, id',
       [id]
     );
+    // const [ailments] = await db.query(
+    //   'SELECT name FROM speciality_ailment_items WHERE speciality_id = ? ORDER BY sort_order, id',
+    //   [id]
+    // );
     const [ailments] = await db.query(
-      'SELECT name FROM speciality_ailment_items WHERE speciality_id = ? ORDER BY sort_order, id',
-      [id]
-    );
+  `SELECT id, title, description, sort_order
+   FROM speciality_ailment_items
+   WHERE speciality_id = ?
+   ORDER BY sort_order, id`,
+  [id]
+);
     return {
       ...row,
       highlights: highlights.map((h) => h.highlight_text),
       subspecialities: subs.map((s) => s.name),
-      ailments: ailments.map((a) => a.name),
+      // ailments: ailments.map((a) => a.name),
+      ailments: ailments.map((a) => ({
+  id: a.id,
+  title: a.title,
+  description: a.description || '',
+  sort_order: a.sort_order,
+})),
     };
   },
 
@@ -140,12 +153,27 @@ const Speciality = {
         [specialityId, data.subspecialities[i], slug, i]
       );
     }
+    // for (let i = 0; i < (data.ailments || []).length; i += 1) {
+    //   await conn.query(
+    //     'INSERT INTO speciality_ailment_items (speciality_id, name, sort_order) VALUES (?, ?, ?)',
+    //     [specialityId, data.ailments[i], i]
+    //   );
+    // }
     for (let i = 0; i < (data.ailments || []).length; i += 1) {
-      await conn.query(
-        'INSERT INTO speciality_ailment_items (speciality_id, name, sort_order) VALUES (?, ?, ?)',
-        [specialityId, data.ailments[i], i]
-      );
-    }
+  const item = data.ailments[i];
+
+  await conn.query(
+    `INSERT INTO speciality_ailment_items
+      (speciality_id, title, description, sort_order)
+     VALUES (?, ?, ?, ?)`,
+    [
+      specialityId,
+      item.title,
+      item.description || null,
+      i,
+    ]
+  );
+}
   },
 
 
@@ -212,16 +240,27 @@ async findPublicDetailsBySlug(slug) {
 
 
     /* AILMENTS */
+    // db.query(
+    //   `SELECT
+    //      id,
+    //      name,
+    //      sort_order
+    //    FROM speciality_ailment_items
+    //    WHERE speciality_id = ?
+    //    ORDER BY sort_order ASC, id ASC`,
+    //   [specialityId]
+    // ),
     db.query(
-      `SELECT
-         id,
-         name,
-         sort_order
-       FROM speciality_ailment_items
-       WHERE speciality_id = ?
-       ORDER BY sort_order ASC, id ASC`,
-      [specialityId]
-    ),
+  `SELECT
+     id,
+     title,
+     description,
+     sort_order
+   FROM speciality_ailment_items
+   WHERE speciality_id = ?
+   ORDER BY sort_order ASC, id ASC`,
+  [specialityId]
+),
 
 
     /* OUR STORIES */
@@ -258,11 +297,12 @@ async findPublicDetailsBySlug(slug) {
 
     subspecialities,
 
-    ailments:
-      ailments.map(
-        (item) =>
-          item.name
-      ),
+    ailments: ailments.map((item) => ({
+  id: item.id,
+  title: item.title,
+  description: item.description || "",
+  sort_order: item.sort_order,
+})),
 
     patient_stories:
       stories,

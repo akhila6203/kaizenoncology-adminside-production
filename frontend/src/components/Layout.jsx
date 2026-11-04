@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
-import Sidebar from './Sidebar';
-import Topbar from './Topbar';
+import { useState } from "react";
+import Sidebar from "./Sidebar";
+import Topbar from "./Topbar";
 
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -10,7 +10,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="app-shell">
-
       {menuOpen && (
         <div
           className="mobile-sidebar-overlay"
@@ -26,31 +25,56 @@ export default function Layout({ children }) {
       <div className="main">
         <Topbar
           menuOpen={menuOpen}
-          toggleMenu={() => setMenuOpen(prev => !prev)}
+          toggleMenu={() => setMenuOpen((prev) => !prev)}
         />
 
-        <div className="content">
+        <main className="content">
           {children}
-        </div>
+        </main>
       </div>
-
     </div>
   );
 }
 
 
 
+
+// import { useState } from 'react';
 // import Sidebar from './Sidebar';
 // import Topbar from './Topbar';
 
 // export default function Layout({ children }) {
+//   const [menuOpen, setMenuOpen] = useState(false);
+
+//   const closeMenu = () => setMenuOpen(false);
+
 //   return (
 //     <div className="app-shell">
-//       <Sidebar />
+
+//       {menuOpen && (
+//         <div
+//           className="mobile-sidebar-overlay"
+//           onClick={closeMenu}
+//         />
+//       )}
+
+//       <Sidebar
+//         menuOpen={menuOpen}
+//         closeMenu={closeMenu}
+//       />
+
 //       <div className="main">
-//         <Topbar />
-//         <div className="content">{children}</div>
+//         <Topbar
+//           menuOpen={menuOpen}
+//           toggleMenu={() => setMenuOpen(prev => !prev)}
+//         />
+
+//         <div className="content">
+//           {children}
+//         </div>
 //       </div>
+
 //     </div>
 //   );
 // }
+

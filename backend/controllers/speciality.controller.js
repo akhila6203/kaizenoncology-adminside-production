@@ -3,6 +3,29 @@ const { uniqueSlug } = require('../utils/slug');
 const { pagination, parseBoolean, parseIntOrNull, parseList, deleteUploadedFile } = require('../utils/helpers');
 const { toPublicPath } = require('../config/multer');
 
+function parseAilments(value) {
+  if (!value) return [];
+
+  let items = value;
+
+  if (typeof value === 'string') {
+    try {
+      items = JSON.parse(value);
+    } catch {
+      return [];
+    }
+  }
+
+  if (!Array.isArray(items)) return [];
+
+  return items
+    .map((item) => ({
+      title: String(item?.title || '').trim(),
+      description: String(item?.description || '').trim(),
+    }))
+    .filter((item) => item.title || item.description);
+}
+
 exports.list = async (req, res, next) => {
   try {
     const { page, limit, offset } = pagination(req.query);
@@ -47,7 +70,11 @@ function payload(body, about_image) {
     sort_order: parseIntOrNull(body.sort_order) || 0,
     highlights: parseList(body.highlights),
     subspecialities: parseList(body.subspecialities),
-    ailments: parseList(body.ailments),
+    // ailments: parseList(body.ailments),
+    // ailments: typeof body.ailments === 'string'
+    //   ? body.ailments
+    //   : '',
+    ailments: parseAilments(body.ailments),
   };
 }
 

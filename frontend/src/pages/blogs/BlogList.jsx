@@ -1,7 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-
+import { Pencil, Trash2 } from "lucide-react";
 import DataTable from "../../components/DataTable";
 import Pagination from "../../components/Pagination";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
@@ -239,48 +239,64 @@ function ContentTab({ kind, onAddReady }) {
       },
     },
     {
-      key: "actions",
-      label: "Actions",
-      render: (row) => (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <button
-            type="button"
-            onClick={() =>
-              setDrawer({ open: true, id: row.id })
-            }
-            style={{
-              ...buttonStyle,
-              background: "#EDF8FA",
-              color: "#087A86",
-              border: "1px solid #B9DFE4",
-              padding: "8px 12px",
-            }}
-          >
-            ✎ Edit
-          </button>
+  key: "actions",
+  label: "Actions",
+  render: (row) => (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+      }}
+    >
+      {/* EDIT ICON */}
+      <button
+        type="button"
+        title={`Edit ${label}`}
+        aria-label={`Edit ${row.title}`}
+        onClick={() =>
+          setDrawer({ open: true, id: row.id })
+        }
+        style={{
+          width: "34px",
+          height: "34px",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px solid #cfe2e0",
+          borderRadius: "7px",
+          background: "#f0f8f7",
+          color: "#064b50",
+          cursor: "pointer",
+        }}
+      >
+        <Pencil size={16} />
+      </button>
 
-          <button
-            type="button"
-            onClick={() => setDeleting(row)}
-            style={{
-              ...buttonStyle,
-              background: "#FFF1F2",
-              color: "#DC2626",
-              border: "1px solid #FECDD3",
-              padding: "8px 12px",
-            }}
-          >
-            × Delete
-          </button>
-        </div>
-      ),
-    },
+      {/* DELETE ICON */}
+      <button
+        type="button"
+        title={`Delete ${label}`}
+        aria-label={`Delete ${row.title}`}
+        onClick={() => setDeleting(row)}
+        style={{
+          width: "34px",
+          height: "34px",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px solid #fecaca",
+          borderRadius: "7px",
+          background: "#fef2f2",
+          color: "#dc2626",
+          cursor: "pointer",
+        }}
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
+  ),
+},
   ];
 
   return (

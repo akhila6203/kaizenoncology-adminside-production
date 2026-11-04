@@ -26,7 +26,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className="page-head">
-        <h1>Dashboard</h1>
+        {/* <h1>Dashboard</h1> */}
       </div>
       <div className="stats">
         {cards.map(([key, label]) => (

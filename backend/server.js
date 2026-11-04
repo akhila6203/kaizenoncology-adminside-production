@@ -21,6 +21,8 @@ const editorialRoutes = require('./routes/editorial.routes');
 const faqRoutes = require('./routes/faq.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 
+const patientCareRoutes = require("./routes/patientCare.routes");
+
 const app = express();
 
  app.use(cors());
@@ -84,9 +86,12 @@ app.use('/api/health-library', healthLibraryRoutes);
    require("./routes/patientCare.routes")
  );
 
+ app.use('/api/partners', require('./routes/partners.routes'));
+ app.use("/api/patient-care", patientCareRoutes);
+
 app.use('/api', authMiddleware);
 app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/partners', require('./routes/partners.routes'));
+// app.use('/api/partners', require('./routes/partners.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
  app.use('/api/specialities', specialityRoutes);
 app.use('/api/services', serviceRoutes);
