@@ -438,3 +438,6 @@ CREATE TABLE IF NOT EXISTS patient_activity_logs (
 -- ALTER TABLE doctors
 -- ADD COLUMN about LONGTEXT DEFAULT NULL,
 -- ADD COLUMN academics_achievements LONGTEXT DEFAULT NULL;
+
+-- ALTER TABLE `partners`
+-- ADD COLUMN `website_url` VARCHAR(1000) NULL AFTER `logo`;

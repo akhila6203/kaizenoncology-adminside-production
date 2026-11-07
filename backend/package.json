@@ -4,14 +4,14 @@
   "description": "Hospital CMS Admin Panel API",
   "main": "server.js",
   "type": "commonjs",
-
-    "scripts": {
+  "scripts": {
     "start": "node --use-system-ca server.js",
     "dev": "node --use-system-ca --watch server.js",
     "seed": "node seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",

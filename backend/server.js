@@ -1,7 +1,9 @@
-const path = require('path');
-const express = require('express');
-const cors = require('cors');
-require('dotenv').config();
+const path = require("path");
+const express = require("express");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+
+require("dotenv").config();
 
 
 const authMiddleware = require('./middleware/auth.middleware');
@@ -25,32 +27,52 @@ const patientCareRoutes = require("./routes/patientCare.routes");
 
 const app = express();
 
- app.use(cors());
+ 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
+  "http://127.0.0.1:5175",
+  "https://akesoglobal.com",
+  "https://www.akesoglobal.com",
+  "https://admin.akesoglobal.com",
+];
 
 app.use(
   cors({
-    origin: [
+    origin: function (origin, callback) {
+      // Allow requests without an Origin header, such as server-to-server requests.
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
 
-       // Local development
-      "http://localhost:5173", // Admin frontend
-      "http://localhost:5174", // User frontend
-      "http://localhost:5175", // User frontend alternate port
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-      "http://127.0.0.1:5175",
-
-      // Production websites
-      "https://akesoglobal.com",
-      "https://www.akesoglobal.com",
-      "https://admin.akesoglobal.com",
+      return callback(
+        new Error(`CORS blocked for origin: ${origin}`)
+      );
+    },
+    credentials: true,
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS",
     ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
     ],
   })
 );
+
+// Cookie parser MUST run before customer-auth and patient-care routes.
+app.use(cookieParser());
+
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -81,10 +103,10 @@ app.use('/api/faqs', faqRoutes);
 
 app.use('/api/health-library', healthLibraryRoutes);
 
- app.use(
-  "/api/patient-care",
-   require("./routes/patientCare.routes")
- );
+//  app.use(
+//   "/api/patient-care",
+//    require("./routes/patientCare.routes")
+//  );
 
  app.use('/api/partners', require('./routes/partners.routes'));
  app.use("/api/patient-care", patientCareRoutes);

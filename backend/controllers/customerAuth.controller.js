@@ -9,6 +9,18 @@ const jwt =
 
 const Customer =
   require("../models/customer.model");
+  
+  const db = require("../config/db");
+
+const CUSTOMER_COOKIE_NAME = "akeso_customer_session";
+
+const customerCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
 
 const {
   sendActivationEmail,
@@ -308,119 +320,300 @@ if (!activated) {
 /* =========================================
    LOGIN
 ========================================= */
+/* =========================================
+   LOGIN - HTTP ONLY COOKIE
+========================================= */
 
-exports.login =
-  async (req, res, next) => {
+exports.login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
 
-    try {
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required.",
+      });
+    }
 
-      const {
-        email,
-        password,
-      } = req.body;
+    const customer = await Customer.findByEmail(
+      email.trim().toLowerCase()
+    );
 
+    if (!customer) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
 
-      if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Email and password are required.",
-        });
-      }
+    if (customer.status === "pending") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Please activate your account by setting your password from the email we sent you.",
+      });
+    }
 
+    if (customer.status === "blocked") {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your account is currently unavailable.",
+      });
+    }
 
-      const customer =
-        await Customer.findByEmail(
-          email.trim().toLowerCase()
-        );
+    if (!customer.password) {
+      return res.status(403).json({
+        success: false,
+        message: "Please set your password first.",
+      });
+    }
 
+    const valid = await bcrypt.compare(
+      password,
+      customer.password
+    );
 
-      if (!customer) {
-        return res.status(401).json({
-          success: false,
-          message:
-            "Invalid email or password.",
-        });
-      }
+    if (!valid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
 
+    const token = signCustomerToken(customer);
 
-      if (
-        customer.status ===
-        "pending"
-      ) {
-        return res.status(403).json({
-          success: false,
-          message:
-            "Please activate your account by setting your password from the email we sent you.",
-        });
-      }
+    await Customer.updateLastLogin(customer.id);
 
+    // Store JWT in an HttpOnly cookie, not Local Storage.
+    res.cookie(
+      CUSTOMER_COOKIE_NAME,
+      token,
+      customerCookieOptions
+    );
 
-      if (
-        customer.status ===
-        "blocked"
-      ) {
-        return res.status(403).json({
-          success: false,
-          message:
-            "Your account is currently unavailable.",
-        });
-      }
+    return res.json({
+      success: true,
+      message: "Login successful.",
 
+      // No token returned to frontend.
+      user: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    });
 
-      if (!customer.password) {
-        return res.status(403).json({
-          success: false,
-          message:
-            "Please set your password first.",
-        });
-      }
-
-
-      const valid =
-        await bcrypt.compare(
-          password,
-          customer.password
-        );
-
-
-      if (!valid) {
-        return res.status(401).json({
-          success: false,
-          message:
-            "Invalid email or password.",
-        });
-      }
-
-
-      const token =
-        signCustomerToken(
-          customer
-        );
+  } catch (error) {
+    next(error);
+  }
+};
 
 
-      await Customer.updateLastLogin(
-        customer.id
+
+/* =========================================
+   CHECK CUSTOMER SESSION
+========================================= */
+
+exports.session = async (req, res, next) => {
+  try {
+    const token = req.cookies?.[CUSTOMER_COOKIE_NAME];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Customer login required.",
+      });
+    }
+
+    const payload = jwt.verify(
+      token,
+      process.env.CUSTOMER_JWT_SECRET
+    );
+
+    if (
+      payload.type !== "customer" ||
+      !Number.isInteger(Number(payload.id))
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid customer session.",
+      });
+    }
+
+    const [[customer]] = await db.query(
+      `SELECT id, name, email, phone, status
+       FROM customers
+       WHERE id = ? AND status = 'active'
+       LIMIT 1`,
+      [payload.id]
+    );
+
+    if (!customer) {
+      res.clearCookie(
+        CUSTOMER_COOKIE_NAME,
+        customerCookieOptions
       );
 
-
-      return res.json({
-        success: true,
-
-        token,
-
-        user: {
-          id: customer.id,
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-        },
+      return res.status(401).json({
+        success: false,
+        message: "Customer account is inactive.",
       });
-
-    } catch (error) {
-      next(error);
     }
-  };
+
+    return res.json({
+      success: true,
+      user: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    });
+
+  } catch (error) {
+    res.clearCookie(
+      CUSTOMER_COOKIE_NAME,
+      customerCookieOptions
+    );
+
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired customer session.",
+    });
+  }
+};
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+exports.logout = (req, res) => {
+  res.clearCookie(
+    CUSTOMER_COOKIE_NAME,
+    customerCookieOptions
+  );
+
+  return res.json({
+    success: true,
+    message: "Logged out successfully.",
+  });
+};
+
+// exports.login =
+//   async (req, res, next) => {
+
+//     try {
+
+//       const {
+//         email,
+//         password,
+//       } = req.body;
+
+
+//       if (!email || !password) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "Email and password are required.",
+//         });
+//       }
+
+
+//       const customer =
+//         await Customer.findByEmail(
+//           email.trim().toLowerCase()
+//         );
+
+
+//       if (!customer) {
+//         return res.status(401).json({
+//           success: false,
+//           message:
+//             "Invalid email or password.",
+//         });
+//       }
+
+
+//       if (
+//         customer.status ===
+//         "pending"
+//       ) {
+//         return res.status(403).json({
+//           success: false,
+//           message:
+//             "Please activate your account by setting your password from the email we sent you.",
+//         });
+//       }
+
+
+//       if (
+//         customer.status ===
+//         "blocked"
+//       ) {
+//         return res.status(403).json({
+//           success: false,
+//           message:
+//             "Your account is currently unavailable.",
+//         });
+//       }
+
+
+//       if (!customer.password) {
+//         return res.status(403).json({
+//           success: false,
+//           message:
+//             "Please set your password first.",
+//         });
+//       }
+
+
+//       const valid =
+//         await bcrypt.compare(
+//           password,
+//           customer.password
+//         );
+
+
+//       if (!valid) {
+//         return res.status(401).json({
+//           success: false,
+//           message:
+//             "Invalid email or password.",
+//         });
+//       }
+
+
+//       const token =
+//         signCustomerToken(
+//           customer
+//         );
+
+
+//       await Customer.updateLastLogin(
+//         customer.id
+//       );
+
+
+//       return res.json({
+//         success: true,
+
+//         token,
+
+//         user: {
+//           id: customer.id,
+//           name: customer.name,
+//           email: customer.email,
+//           phone: customer.phone,
+//         },
+//       });
+
+//     } catch (error) {
+//       next(error);
+//     }
+//   };
 
 
 /* =========================================
