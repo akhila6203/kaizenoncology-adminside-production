@@ -19,7 +19,8 @@ const doctorRoutes = require('./routes/doctor.routes');
 const healthLibraryRoutes = require('./routes/healthLibrary.routes');
 const storyRoutes = require('./routes/story.routes');
 const blogRoutes = require('./routes/blog.routes');
-const editorialRoutes = require('./routes/editorial.routes');
+const blogController = require('./controllers/blog.controller');
+// const editorialRoutes = require('./routes/editorial.routes');
 const faqRoutes = require('./routes/faq.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 
@@ -35,9 +36,9 @@ const allowedOrigins = [
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
   "http://127.0.0.1:5175",
-  "https://akesoglobal.com",
-  "https://www.akesoglobal.com",
-  "https://admin.akesoglobal.com",
+  "https://kaizenoncology.easybizcart.com",
+  "https://www.kaizenoncology.easybizcart.com",
+  "https://kaizenoncology-admin.easybizcart.com",
 ];
 
 app.use(
@@ -96,8 +97,8 @@ app.get(
   require('./controllers/story.controller').list
 );
 app.get('/api/public/partners', require('./controllers/partners.controller').list);
-app.get('/api/public/editorial/:kind', (req,res,next) => { req.query.public='1'; require('./controllers/editorial.controller').list(req,res,next); });
-app.get('/api/public/editorial/:kind/:id', (req,res,next) => { req.query.public='1'; require('./controllers/editorial.controller').getOne(req,res,next); });
+// app.get('/api/public/editorial/:kind', (req,res,next) => { req.query.public='1'; require('./controllers/editorial.controller').list(req,res,next); });
+// app.get('/api/public/editorial/:kind/:id', (req,res,next) => { req.query.public='1'; require('./controllers/editorial.controller').getOne(req,res,next); });
 app.get('/api/public/settings', require('./controllers/settings.controller').get);
 app.use('/api/faqs', faqRoutes);
 
@@ -111,6 +112,11 @@ app.use('/api/health-library', healthLibraryRoutes);
  app.use('/api/partners', require('./routes/partners.routes'));
  app.use("/api/patient-care", patientCareRoutes);
 
+ // PUBLIC BLOG ROUTES - No authentication required
+app.get('/api/public/blogs', blogController.publicList);
+app.get('/api/public/blogs/:slug', blogController.publicGetOne);
+
+
 app.use('/api', authMiddleware);
 app.use('/api/hospitals', hospitalRoutes);
 // app.use('/api/partners', require('./routes/partners.routes'));
@@ -122,7 +128,8 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/our-stories', storyRoutes);
 
 app.use('/api/blogs', blogRoutes);
-app.use('/api/editorial', editorialRoutes);
+app.use('/api/editorial/blogs', blogRoutes);
+// app.use('/api/editorial', editorialRoutes);
 
  app.use('/api/faqs', faqRoutes);
 app.use('/api/dashboard', dashboardRoutes);

@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS hospital_cms CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE hospital_cms;
+CREATE DATABASE IF NOT EXISTS kaizenoncology CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE kaizenoncology;
 
 CREATE TABLE IF NOT EXISTS admins (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -176,13 +176,13 @@ CREATE TABLE IF NOT EXISTS testimonials (
   CONSTRAINT fk_testimonial_doctor FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS speciality_highlights (
+CREATE TABLE IF NOT EXISTS speciality_care_treatment_areas (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   speciality_id INT UNSIGNED NOT NULL,
-  highlight_text TEXT NOT NULL,
+  area_text TEXT NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_highlight_speciality FOREIGN KEY (speciality_id) REFERENCES specialities(id) ON DELETE CASCADE
+  CONSTRAINT fk_care_treatment_area_speciality FOREIGN KEY (speciality_id) REFERENCES specialities(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS speciality_subspecialities (
@@ -346,49 +346,27 @@ CREATE TABLE IF NOT EXISTS customers (
 
 
 
-
-
-
-
-
-
-
-
-
-
-
--- Run ONCE in hospital_cms; existing blogs are preserved.
+-- Run ONCE in kaizenoncology; existing blogs are preserved.
 -- ALTER TABLE blogs ADD COLUMN speciality_id INT UNSIGNED NULL AFTER category;
 -- ALTER TABLE blogs ADD COLUMN short_description TEXT NULL AFTER content;
 -- ALTER TABLE blogs ADD INDEX idx_blogs_speciality (speciality_id);
 
 
-CREATE TABLE IF NOT EXISTS case_studies (
- id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
- title VARCHAR(220) NOT NULL, slug VARCHAR(240) NOT NULL UNIQUE,
- thumbnail VARCHAR(255) NULL, speciality_id INT UNSIGNED NULL,
- short_description TEXT NULL, content LONGTEXT NULL,
- is_published TINYINT(1) NOT NULL DEFAULT 1,
- published_at DATETIME NULL,
- created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
- updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
- KEY idx_case_speciality (speciality_id), KEY idx_case_published (is_published,created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- CREATE TABLE IF NOT EXISTS case_studies (
+--  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+--  title VARCHAR(220) NOT NULL, slug VARCHAR(240) NOT NULL UNIQUE,
+--  thumbnail VARCHAR(255) NULL, speciality_id INT UNSIGNED NULL,
+--  short_description TEXT NULL, content LONGTEXT NULL,
+--  is_published TINYINT(1) NOT NULL DEFAULT 1,
+--  published_at DATETIME NULL,
+--  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--  KEY idx_case_speciality (speciality_id), KEY idx_case_published (is_published,created_at)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
-
-
-
-
-
-
-
-
-
-
-
--- Run once in hospital_cms. Existing tables are not modified.
-USE hospital_cms;
+-- Run once in kaizenoncology. Existing tables are not modified.
+USE kaizenoncology;
 
 CREATE TABLE IF NOT EXISTS patient_profiles (
  customer_id INT UNSIGNED PRIMARY KEY,
@@ -441,3 +419,55 @@ CREATE TABLE IF NOT EXISTS patient_activity_logs (
 
 -- ALTER TABLE `partners`
 -- ADD COLUMN `website_url` VARCHAR(1000) NULL AFTER `logo`;
+
+
+-- CREATE TABLE speciality_images (
+--     id INT NOT NULL AUTO_INCREMENT,
+--     speciality_id INT UNSIGNED NOT NULL,
+--     image_path VARCHAR(500) NOT NULL,
+--     alt_text VARCHAR(255) DEFAULT NULL,
+--     sort_order INT NOT NULL DEFAULT 0,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+--     PRIMARY KEY (id),
+--     KEY idx_speciality_images_speciality_id (speciality_id),
+
+--     CONSTRAINT fk_speciality_images_speciality
+--         FOREIGN KEY (speciality_id)
+--         REFERENCES specialities(id)
+--         ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ALTER TABLE specialities
+-- ADD COLUMN when_to_consult VARCHAR(500) NULL
+-- AFTER about_content;
+
+-- ALTER TABLE specialities
+-- ADD COLUMN icon_name VARCHAR(100) NULL AFTER name;
+
+
+
+-- CREATE TABLE hospital_contacts (
+--     id INT NOT NULL AUTO_INCREMENT,
+--     location_name VARCHAR(255) NOT NULL,
+--     email VARCHAR(255) DEFAULT NULL,
+--     phone VARCHAR(50) DEFAULT NULL,
+--     alt_phone VARCHAR(50) DEFAULT NULL,
+--     address TEXT DEFAULT NULL,
+--     location_url TEXT DEFAULT NULL,
+--     sort_order INT DEFAULT 0,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--         ON UPDATE CURRENT_TIMESTAMP,
+--     PRIMARY KEY (id)
+-- );
+
+-- ALTER TABLE settings
+-- ADD COLUMN meta_keywords TEXT NULL,
+-- ADD COLUMN meta_description TEXT NULL;
+
+
+
+
+
+

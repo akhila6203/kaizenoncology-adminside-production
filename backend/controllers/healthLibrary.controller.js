@@ -4,7 +4,9 @@ const path = require("path");
 const fs = require("fs");
 const fsp = require("fs/promises");
 const { sendHealthEnquiryEmail } = require("../services/mail.service");
+
 const TYPES = ["estimate", "contact", "callback"];
+
 const parse = (x) => {
   try {
     return typeof x === "string" ? JSON.parse(x || "{}") : x || {};
@@ -12,7 +14,10 @@ const parse = (x) => {
     return {};
   }
 };
+
 const text = (x) => String(x ?? "").trim();
+
+// plain text fields copied straight from the request body
 const fields = [
   "patient_name",
   "phone",
@@ -27,31 +32,54 @@ const fields = [
   "subject",
   "message",
   "preferred_time",
+  // Book Appointment fields
+  "age",
+  "gender",
+  "visited_before",
+  "preferred_location",
+  "appointment_date",
+  "department",
+  "preferred_doctor",
 ];
+
+const isTrue = (x) => ["1", "true", "on", "yes"].includes(text(x).toLowerCase());
+
 function build(body = {}, existing = {}) {
   const name = text(
-  body.patient_name ||
-    body.name ||
-    body.fullName ||
-    body.full_name ||
-    [body.first_name, body.last_name].filter(Boolean).join(" ") ||
-    existing.patient_name
-);
+    body.patient_name ||
+      body.name ||
+      body.fullName ||
+      body.full_name ||
+      [body.first_name, body.last_name].filter(Boolean).join(" ") ||
+      existing.patient_name
+  );
   const phone = text(
-    body.phone || body.mobile || body.mobileNumber || existing.phone,
+    body.phone ||
+      body.mobile ||
+      body.mobileNumber ||
+      body.mobile_number ||
+      existing.phone
   );
   const email = text(body.email || existing.email);
+
   if (!name || !phone)
     throw Object.assign(new Error("Name and phone are required"), {
       status: 400,
     });
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     throw Object.assign(new Error("Invalid email"), { status: 400 });
+
   const data = { ...existing, patient_name: name, phone, email: email || null };
+
   for (const k of fields) {
     if (k in body) data[k] = text(body[k]) || null;
   }
-  data.country = data.country || text(body.country_name) || null;
+
+  // ---- alternative field names the website forms may send ----
+  data.country =
+    data.country ||
+    text(body.country_name || body.city_country || body.cityCountry || body.city) ||
+    null;
   data.disease =
     data.disease ||
     text(body.speciality || body.disease_name || body.treatment) ||
@@ -59,26 +87,83 @@ function build(body = {}, existing = {}) {
   data.hospital_name = data.hospital_name || text(body.hospital) || null;
   data.message =
     data.message ||
-    text(body.comments || body.query || body.description) ||
+    text(
+      body.comments ||
+        body.query ||
+        body.description ||
+        body.additional_information ||
+        body.additionalInformation ||
+        body.how_can_we_help
+    ) ||
     null;
   data.preferred_time =
-    data.preferred_time || text(body.preferredTime || body.time) || null;
+    data.preferred_time ||
+    text(
+      body.preferredTime ||
+        body.time ||
+        body.appointment_time ||
+        body.appointmentTime
+    ) ||
+    null;
+  data.preferred_location =
+    data.preferred_location ||
+    text(
+      body.preferredLocation ||
+        body.location ||
+        body.kaizen_location ||
+        body.preferred_kaizen_location
+    ) ||
+    null;
+  data.appointment_date =
+    data.appointment_date ||
+    text(
+      body.appointmentDate ||
+        body.preferred_date ||
+        body.preferredDate ||
+        body.preferred_appointment_date
+    ) ||
+    null;
+  data.department =
+    data.department ||
+    text(body.department_name || body.departmentName || body.speciality) ||
+    null;
+  data.preferred_doctor =
+    data.preferred_doctor ||
+    text(body.doctor || body.doctor_name || body.preferredDoctor) ||
+    null;
+  data.visited_before =
+    data.visited_before ||
+    text(body.visitedBefore || body.visited || body.visited_us_before) ||
+    null;
+
+  // age: keep it short so it always fits the column
+  data.age = data.age ? text(data.age).slice(0, 10) : null;
+
+  // "I agree to be contacted" checkbox
+  const consentRaw =
+    body.contact_consent ?? body.consent ?? body.agree ?? body.agreed;
+  if (consentRaw !== undefined) data.contact_consent = isTrue(consentRaw) ? 1 : 0;
+  else if (data.contact_consent === undefined || data.contact_consent === null)
+    data.contact_consent = 0;
+
   if (data.amount !== null && data.amount !== undefined && data.amount !== "") {
     const n = Number(data.amount);
     if (!Number.isFinite(n))
       throw Object.assign(new Error("Invalid amount"), { status: 400 });
     data.amount = n;
   } else data.amount = null;
-  for (const k of ["treatment_start_date", "treatment_end_date"])
+
+  for (const k of ["treatment_start_date", "treatment_end_date", "appointment_date"])
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data[k] || "")) data[k] = null;
+
   return data;
 }
+
 function fail(res, e, next) {
   if (e.status)
     return res.status(e.status).json({ success: false, message: e.message });
   next(e);
 }
-
 
 exports.list = async (req, res, next) => {
   try {
@@ -91,23 +176,13 @@ exports.list = async (req, res, next) => {
       });
     }
 
-    const page = Math.max(
-      1,
-      Number(req.query.page) || 1
-    );
-
-    const limit = Math.min(
-      100,
-      Math.max(1, Number(req.query.limit) || 10)
-    );
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10));
 
     // Single date filter
     const date = text(req.query.date);
 
-    if (
-      date &&
-      !/^\d{4}-\d{2}-\d{2}$/.test(date)
-    ) {
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({
         success: false,
         message: "Invalid date",
@@ -132,7 +207,6 @@ exports.list = async (req, res, next) => {
   }
 };
 
-
 exports.getOne = async (req, res, next) => {
   try {
     const row = await HealthLibrary.findById(req.params.id);
@@ -143,19 +217,29 @@ exports.getOne = async (req, res, next) => {
     next(e);
   }
 };
+
 exports.create = async (req, res, next) => {
   try {
     const type = text(req.body.type || req.body.form_type);
-    if (!TYPES.includes(type))
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid form type" });
+
+    if (!TYPES.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid form type",
+      });
+    }
+
+    // Build form data
     const data = build(req.body);
+
+    // Uploaded reports
     const files = (req.files || []).map((f) => ({
       name: f.originalname,
       filename: f.filename,
       size: f.size,
     }));
+
+    // Save data in MySQL
     const saved = await HealthLibrary.create({
       ...data,
       title: data.patient_name,
@@ -164,30 +248,30 @@ exports.create = async (req, res, next) => {
       form_details: JSON.stringify(req.body),
       previous_reports: JSON.stringify(files),
     });
-    // if (!req.admin) {
+
+    // Send email only for public website submissions
+    // Admin panel submissions will not send emails
     if (!req.isAdminEntry) {
       try {
         await sendHealthEnquiryEmail({
           type,
           data: saved,
-          details: req.body,
-          files: req.files || [],
         });
       } catch (err) {
-        console.error("Enquiry email failed:", err.message);
+        console.error("Enquiry email failed:", err);
       }
     }
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: saved,
-        message: "Form submitted successfully",
-      });
+
+    return res.status(201).json({
+      success: true,
+      data: saved,
+      message: "Form submitted successfully",
+    });
   } catch (e) {
     fail(res, e, next);
   }
 };
+
 exports.update = async (req, res, next) => {
   try {
     const existing = await HealthLibrary.findById(req.params.id);
@@ -212,6 +296,7 @@ exports.update = async (req, res, next) => {
     fail(res, e, next);
   }
 };
+
 exports.remove = async (req, res, next) => {
   try {
     const row = await HealthLibrary.findById(req.params.id);
@@ -221,21 +306,22 @@ exports.remove = async (req, res, next) => {
     const reports = parse(row.previous_reports);
     if (Array.isArray(reports))
       await Promise.allSettled(
-  reports.map((r) =>
-    fsp.unlink(
-           path.join(
-  __dirname,
-  "../uploads/health-library",
-  path.basename(r.filename || ""),
-)
-          ),
-        ),
+        reports.map((r) =>
+          fsp.unlink(
+            path.join(
+              __dirname,
+              "../uploads/health-library",
+              path.basename(r.filename || "")
+            )
+          )
+        )
       );
     res.json({ success: true, message: "Deleted" });
   } catch (e) {
     next(e);
   }
 };
+
 exports.downloadReport = async (req, res, next) => {
   try {
     const row = await HealthLibrary.findById(req.params.id);
@@ -253,145 +339,23 @@ exports.downloadReport = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Report not found" });
     const r = reports[i];
-   const filePath = path.join(
-  __dirname,
-  "../uploads/health-library",
-  path.basename(r.filename)
-);
+    const filePath = path.join(
+      __dirname,
+      "../uploads/health-library",
+      path.basename(r.filename)
+    );
 
-if (!fs.existsSync(filePath)) {
-  return res.status(404).json({
-    success: false,
-    message: "Report file not found. Please upload it again.",
-  });
-}
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: "Report file not found. Please upload it again.",
+      });
+    }
 
-return res.download(filePath, r.name);
+    return res.download(filePath, r.name);
   } catch (e) {
     next(e);
   }
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// const HealthLibrary = require('../models/healthLibrary.model');
-// const { uniqueSlug } = require('../utils/slug');
-// const { pagination, deleteUploadedFile } = require('../utils/helpers');
-// const { toPublicPath } = require('../config/multer');
-
-// function emptyToNull(value) {
-//   if (value === undefined || value === null || value === '') return null;
-//   return value;
-// }
-
-// exports.list = async (req, res, next) => {
-//   try {
-//     const { page, limit, offset } = pagination(req.query);
-//     const data = await HealthLibrary.list({
-//       search: req.query.search,
-//       page,
-//       limit,
-//       offset,
-//     });
-//     res.json({ success: true, ...data });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// exports.getOne = async (req, res, next) => {
-//   try {
-//     const row = await HealthLibrary.findById(req.params.id);
-//     if (!row) return res.status(404).json({ success: false, message: 'Record not found' });
-//     res.json({ success: true, data: row });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// function payload(body, previous_reports) {
-//   const name = body.patient_name || body.name;
-//   return {
-//     title: name,
-//     patient_name: name,
-//     phone: emptyToNull(body.phone),
-//     email: emptyToNull(body.email),
-//     country: emptyToNull(body.country),
-//     disease: emptyToNull(body.disease),
-//     previous_reports,
-//     treatment_start_date: emptyToNull(body.treatment_start_date),
-//     treatment_end_date: emptyToNull(body.treatment_end_date),
-//     amount: parseAmount(body.amount),
-//     hospital_name: emptyToNull(body.hospital_name),
-//     post_op_details: emptyToNull(body.post_op_details),
-//   };
-// }
-
-// function parseAmount(value) {
-//   if (value === undefined || value === null || value === '') return null;
-//   const n = Number(value);
-//   return Number.isNaN(n) ? null : n;
-// }
-
-// exports.create = async (req, res, next) => {
-//   try {
-//     const name = req.body.patient_name || req.body.name;
-//     if (!name) {
-//       return res.status(400).json({ success: false, message: 'Patient name is required' });
-//     }
-//     const slug = await uniqueSlug('health_library', name, req.body.slug);
-//     const data = await HealthLibrary.create({
-//       ...payload(req.body, toPublicPath(req.file)),
-//       slug,
-//     });
-//     res.status(201).json({ success: true, data });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// exports.update = async (req, res, next) => {
-//   try {
-//     const existing = await HealthLibrary.findById(req.params.id);
-//     if (!existing) return res.status(404).json({ success: false, message: 'Record not found' });
-//     const name = req.body.patient_name || req.body.name || existing.patient_name || existing.title;
-//     const slug = await uniqueSlug('health_library', name, req.body.slug, existing.id);
-//     let previous_reports = existing.previous_reports;
-//     if (req.file) {
-//       deleteUploadedFile(existing.previous_reports);
-//       previous_reports = toPublicPath(req.file);
-//     }
-//     const data = await HealthLibrary.update(existing.id, {
-//       ...payload({ ...req.body, patient_name: name }, previous_reports),
-//       slug,
-//     });
-//     res.json({ success: true, data });
-//   } catch (err) {
-//     next(err);
-//   }
-// };
-
-// exports.remove = async (req, res, next) => {
-//   try {
-//     const existing = await HealthLibrary.findById(req.params.id);
-//     if (!existing) return res.status(404).json({ success: false, message: 'Record not found' });
-//     deleteUploadedFile(existing.previous_reports);
-//     deleteUploadedFile(existing.thumbnail);
-//     await HealthLibrary.remove(existing.id);
-//     res.json({ success: true, message: 'Record deleted' });
-//   } catch (err) {
-//     next(err);
-//   }
-// };

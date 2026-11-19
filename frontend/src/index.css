@@ -23,14 +23,71 @@ a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; }
 
 .app-shell { display: flex; min-height: 100%; }
-.sidebar {
+/* .sidebar {
   width: 250px;
   background: linear-gradient(180deg, #0f3d4c 0%, #145 co 100%);
   background: #0f3d4c;
   color: #fff;
   padding: 20px 0;
   flex-shrink: 0;
+} */
+ .sidebar {
+  width: 250px;
+  background: #ffffff;
+  color: #173b48;
+  padding: 20px 0;
+  flex-shrink: 0;
 }
+
+/* =========================================
+   WHITE ADMIN SIDEBAR
+========================================= */
+
+/* Sidebar background */
+.sidebar {
+  background: #ffffff !important;
+  color: #173b48;
+  border-right: 1px solid #e3ebf2;
+  box-shadow: 2px 0 10px rgba(15, 40, 55, 0.04);
+}
+
+/* Sidebar navigation links */
+.sidebar .nav-link {
+  color: #334155;
+  background: transparent;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+/* Sidebar icons */
+.sidebar .nav-link .nav-icon {
+  color: #526575;
+}
+
+/* Hover and active menu */
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: #eaf4f6;
+  color: #0f5263;
+  border-left-color: #1a8a9e;
+}
+
+/* Active and hover icons */
+.sidebar .nav-link:hover .nav-icon,
+.sidebar .nav-link.active .nav-icon {
+  color: #1a8a9e;
+}
+
+/* Mobile close button */
+.sidebar .sidebar-close-btn {
+  background: #e8eef3;
+  color: #173b48;
+}
+
+.sidebar .sidebar-close-btn:hover {
+  background: #dce9ed;
+}
+
 .brand { padding: 0 20px 24px; font-weight: 700; letter-spacing: 0.02em; }
 .brand small { display: block; color: #9ec9d4; font-weight: 400; margin-top: 4px; }
 .nav-link {
@@ -832,8 +889,19 @@ body,
   flex-shrink: 0;
 }
 
-
 .sidebar-brand {
+  min-height: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 40px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+}
+
+/* .sidebar-brand {
   min-height: 115px;
   height: 115px;
   display: flex;
@@ -842,7 +910,7 @@ body,
   position: relative;
   padding: 12px 18px;
   box-sizing: border-box;
-}
+} */
 
 .sidebar-logo {
   display: block;
@@ -1874,3 +1942,560 @@ body,
     min-width: 0;
   }
 }
+
+/* =========================================
+   SPECIALITY GALLERY IMAGE PREVIEW
+========================================= */
+
+.speciality-gallery-section {
+  width: 100%;
+  min-width: 0;
+}
+
+.speciality-gallery-section input[type="file"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 8px;
+}
+
+.speciality-gallery-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.speciality-gallery-preview-item {
+  width: 130px;
+  flex: 0 0 130px;
+  overflow: hidden;
+}
+
+.speciality-gallery-preview-image {
+  display: block;
+  width: 130px !important;
+  height: 110px !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.speciality-gallery-remove {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: #dc2626;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.speciality-gallery-remove:hover {
+  color: #991b1b;
+}
+
+
+/* Speciality Icon Field */
+.speciality-icon-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+}
+
+.speciality-icon-field > label {
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+  font-size: 14px;
+  font-weight: 500;
+  color: #344638;
+}
+
+.speciality-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+}
+
+.speciality-icon-select {
+  flex: 1;
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #fff;
+  color: #344638;
+  font-size: 14px;
+  outline: none;
+}
+
+.speciality-icon-select:focus {
+  border-color: #4f7359;
+}
+
+.speciality-icon-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  min-height: 42px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid #dce5da;
+  border-radius: 7px;
+  background: #f6f9f6;
+  color: #344638;
+}
+
+.speciality-icon-preview svg {
+  width: 26px;
+  height: 26px;
+  color: #e87744;
+  flex-shrink: 0;
+}
+
+.speciality-icon-preview span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.speciality-icon-help {
+  margin: 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .speciality-icon-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .speciality-icon-preview {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+
+
+
+/* ------------------------------ */
+
+/* =========================================
+   SETTINGS PAGE - MAIN LAYOUT
+========================================= */
+
+.settings-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+.settings-page form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Common white sections */
+
+.settings-section {
+  width: 100%;
+  min-width: 0;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 40, 55, 0.025);
+}
+
+.settings-section h2 {
+  margin: 0 0 18px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid #edf1f4;
+  color: #173b48;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* =========================================
+   TOP 3 COLUMNS
+   LOGO 20% | GENERAL 40% | SOCIAL 40%
+========================================= */
+
+.settings-top-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1fr)
+    minmax(0, 2fr)
+    minmax(0, 2fr);
+  gap: 16px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.settings-top-grid > .settings-section {
+  min-width: 0;
+  height: 100%;
+}
+
+/* Logo column */
+
+.settings-logo-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-logo {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed #cbd9e1;
+  border-radius: 9px;
+  background: #f9fbfc;
+}
+
+.settings-logo label {
+  display: block;
+  margin-bottom: 9px;
+  color: #344d59;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-logo input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.settings-logo .preview {
+  display: block;
+  width: 100%;
+  max-width: 150px;
+  height: 100px;
+  margin: 8px auto;
+  padding: 5px;
+  object-fit: contain;
+  background: #ffffff;
+}
+
+/* =========================================
+   GENERAL + SOCIAL FIELDS
+   TWO FIELDS PER ROW
+========================================= */
+
+.settings-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-field {
+  min-width: 0;
+}
+
+.settings-field-full {
+  grid-column: 1 / -1;
+}
+
+.settings-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #425766;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-field input,
+.settings-field textarea {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #dce5eb;
+  border-radius: 7px;
+  outline: none;
+  background: #ffffff;
+  color: #263d48;
+  font-size: 13px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.settings-field textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+.settings-field input:focus,
+.settings-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 138, 158, 0.10);
+}
+
+.settings-field input::placeholder,
+.settings-field textarea::placeholder {
+  color: #a0adb4;
+}
+
+/* =========================================
+   HOSPITAL CONTACT LOCATIONS
+========================================= */
+
+.settings-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.settings-section-heading h2 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings-section-heading .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.settings-locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-location-card {
+  width: 100%;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e3ebf2;
+  border-radius: 10px;
+  background: #fbfcfd;
+}
+
+.settings-location-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 17px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8eef2;
+}
+
+.settings-location-heading h3 {
+  margin: 0;
+  color: #173b48;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* =========================================
+   TERMS + PRIVACY SIDE BY SIDE
+========================================= */
+
+.settings-legal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 20px;
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-legal-grid .settings-section {
+  height: 100%;
+  min-width: 0;
+}
+
+.settings-legal-grid .ql-toolbar.ql-snow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  border: 1px solid #dce5eb;
+  border-radius: 7px 7px 0 0;
+  background: #f8fafb;
+}
+
+.settings-legal-grid .ql-container.ql-snow {
+  min-height: 190px;
+  border: 1px solid #dce5eb;
+  border-top: 0;
+  border-radius: 0 0 7px 7px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.settings-legal-grid .ql-editor {
+  min-height: 190px;
+  color: #263d48;
+  line-height: 1.6;
+}
+
+.settings-legal-grid .ql-editor.ql-blank::before {
+  color: #a0adb4;
+  font-style: normal;
+}
+
+/* =========================================
+   ERROR + LOADING
+========================================= */
+
+.settings-error {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #f3c7c3;
+  border-radius: 8px;
+  background: #fff5f4;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.settings-loading {
+  padding: 25px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* =========================================
+   SAVE BUTTON
+========================================= */
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  padding: 15px 18px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.settings-actions .btn {
+  min-width: 145px;
+  min-height: 42px;
+  font-weight: 600;
+}
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 1100px) {
+  .settings-top-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+
+  .settings-logo-section {
+    grid-column: 1 / -1;
+  }
+
+  .settings-logo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+}
+
+/* =========================================
+   SMALL TABLET
+========================================= */
+
+@media (max-width: 800px) {
+  .settings-top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-logo-section {
+    grid-column: auto;
+  }
+
+  .settings-legal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+  .settings-section {
+    padding: 15px;
+  }
+
+  .settings-section h2 {
+    font-size: 16px;
+  }
+
+  .settings-fields-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .settings-field-full {
+    grid-column: auto;
+  }
+
+  .settings-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-location-card {
+    padding: 13px;
+  }
+
+  .settings-location-heading {
+    align-items: flex-start;
+  }
+
+  .settings-legal-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .settings-legal-grid .ql-toolbar.ql-snow {
+    padding: 7px;
+  }
+
+  .settings-legal-grid .ql-container.ql-snow,
+  .settings-legal-grid .ql-editor {
+    min-height: 160px;
+  }
+
+  .settings-actions {
+    justify-content: stretch;
+  }
+
+  .settings-actions .btn {
+    width: 100%;
+  }
+}
+

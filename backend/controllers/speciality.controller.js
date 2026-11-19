@@ -3,28 +3,7 @@ const { uniqueSlug } = require('../utils/slug');
 const { pagination, parseBoolean, parseIntOrNull, parseList, deleteUploadedFile } = require('../utils/helpers');
 const { toPublicPath } = require('../config/multer');
 
-function parseAilments(value) {
-  if (!value) return [];
 
-  let items = value;
-
-  if (typeof value === 'string') {
-    try {
-      items = JSON.parse(value);
-    } catch {
-      return [];
-    }
-  }
-
-  if (!Array.isArray(items)) return [];
-
-  return items
-    .map((item) => ({
-      title: String(item?.title || '').trim(),
-      description: String(item?.description || '').trim(),
-    }))
-    .filter((item) => item.title || item.description);
-}
 
 exports.list = async (req, res, next) => {
   try {
@@ -64,17 +43,14 @@ exports.getOne = async (req, res, next) => {
 function payload(body, about_image) {
   return {
     name: body.name,
+    icon_name: body.icon_name || null,
     about_content: body.about_content,
+    when_to_consult: body.when_to_consult || null,
     about_image,
     is_active: parseBoolean(body.is_active, true) ? 1 : 0,
     sort_order: parseIntOrNull(body.sort_order) || 0,
     highlights: parseList(body.highlights),
     subspecialities: parseList(body.subspecialities),
-    // ailments: parseList(body.ailments),
-    // ailments: typeof body.ailments === 'string'
-    //   ? body.ailments
-    //   : '',
-    ailments: parseAilments(body.ailments),
   };
 }
 
@@ -84,10 +60,22 @@ exports.create = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Name is required' });
     }
     const slug = await uniqueSlug('specialities', req.body.name, req.body.slug);
-    const data = await Speciality.create({
-      ...payload(req.body, toPublicPath(req.file)),
-      slug,
-    });
+
+    const aboutImageFile = req.files?.about_image?.[0];
+const galleryFiles = req.files?.gallery_images || [];
+
+const galleryImages = galleryFiles.map((file) => ({
+  image_path: toPublicPath(file),
+}));
+
+const data = await Speciality.create({
+  ...payload(
+    req.body,
+    aboutImageFile ? toPublicPath(aboutImageFile) : null
+  ),
+  galleryImages,
+  slug,
+});
     res.status(201).json({ success: true, data });
   } catch (err) {
     next(err);
@@ -100,14 +88,24 @@ exports.update = async (req, res, next) => {
     if (!existing) return res.status(404).json({ success: false, message: 'Speciality not found' });
     const slug = await uniqueSlug('specialities', req.body.name || existing.name, req.body.slug, existing.id);
     let about_image = existing.about_image;
-    if (req.file) {
-      deleteUploadedFile(existing.about_image);
-      about_image = toPublicPath(req.file);
-    }
+
+const aboutImageFile = req.files?.about_image?.[0];
+const galleryFiles = req.files?.gallery_images || [];
+
+if (aboutImageFile) {
+  about_image = toPublicPath(aboutImageFile);
+}
+
+const galleryImages = galleryFiles.map((file) => ({
+  image_path: toPublicPath(file),
+}));
     const data = await Speciality.update(existing.id, {
       ...payload({ ...req.body, name: req.body.name || existing.name, is_active: req.body.is_active ?? existing.is_active }, about_image),
-      slug,
+       galleryImages, slug,
     });
+    if (aboutImageFile && existing.about_image) {
+  deleteUploadedFile(existing.about_image);
+}
     res.json({ success: true, data });
   } catch (err) {
     next(err);
@@ -117,11 +115,27 @@ exports.update = async (req, res, next) => {
 exports.remove = async (req, res, next) => {
   try {
     const existing = await Speciality.findById(req.params.id);
-    if (!existing) return res.status(404).json({ success: false, message: 'Speciality not found' });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'Speciality not found',
+      });
+    }
+
     deleteUploadedFile(existing.about_image);
     deleteUploadedFile(existing.icon_image);
+
+    (existing.gallery_images || []).forEach((image) => {
+      deleteUploadedFile(image.image_path);
+    });
+
     await Speciality.remove(existing.id);
-    res.json({ success: true, message: 'Speciality deleted' });
+
+    res.json({
+      success: true,
+      message: 'Speciality deleted',
+    });
   } catch (err) {
     next(err);
   }

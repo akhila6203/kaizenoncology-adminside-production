@@ -1,60 +1,154 @@
-const db = require('../config/db');
 
-const FIELDS = [
-  'email',
-  'phone',
-  'alt_phone',
-  'facebook_url',
-  'instagram_url',
-  'linkedin_url',
-  'youtube_url',
-  'address',
-  'terms_conditions',
-  'privacy_policy',
-];
+const settingsModel = require('../models/settings.model');
 
-// Quill sends this when the editor is empty
-const clean = (v) => {
-  const s = (v ?? '').toString().trim();
-  return s === '<p><br></p>' ? '' : s;
+const clean = (value) => {
+  if (value === undefined || value === null) {
+    return '';
+  }
+
+  const result = String(value).trim();
+
+  if (
+    result === '<p><br></p>' ||
+    result === '<p></p>'
+  ) {
+    return '';
+  }
+
+  return result;
 };
 
+const isValidEmail = (email) => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const parseContacts = (value) => {
+  if (!value) return [];
+
+  let parsed;
+
+  try {
+    parsed = typeof value === 'string'
+      ? JSON.parse(value)
+      : value;
+  } catch {
+    const error = new Error('Invalid hospital contacts data.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!Array.isArray(parsed)) {
+    const error = new Error('Hospital contacts must be an array.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return parsed
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      location_name: clean(item.location_name),
+      email: clean(item.email),
+      phone: clean(item.phone),
+      alt_phone: clean(item.alt_phone),
+      address: clean(item.address),
+      location_url: clean(item.location_url),
+    }))
+    .filter((item) => {
+      return (
+        item.location_name ||
+        item.email ||
+        item.phone ||
+        item.alt_phone ||
+        item.address ||
+        item.location_url
+      );
+    });
+};
+
+// GET SETTINGS + HOSPITAL CONTACT LOCATIONS
 exports.get = async (req, res, next) => {
   try {
-    const [rows] = await db.query('SELECT * FROM settings WHERE id = 1');
-    res.json({ success: true, data: rows[0] || {} });
-  } catch (err) {
-    next(err);
+    const data = await settingsModel.get();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
+// UPDATE SETTINGS + HOSPITAL CONTACT LOCATIONS
 exports.update = async (req, res, next) => {
   try {
     const email = clean(req.body.email);
-    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
-      return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+
+    if (email && !isValidEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid general email address.',
+      });
     }
 
-    const [rows] = await db.query('SELECT logo FROM settings WHERE id = 1');
+    const contacts = parseContacts(req.body.contacts);
+
+    // Validate hospital location emails
+    for (const contact of contacts) {
+      if (contact.email && !isValidEmail(contact.email)) {
+        return res.status(400).json({
+          success: false,
+          message: `Please enter a valid email for ${contact.location_name || 'hospital location'}.`,
+        });
+      }
+    }
+
+    // Keep existing logo if no new logo is uploaded
+    const currentLogo = await settingsModel.getLogo();
+
     const logo = req.file
       ? `/uploads/settings/${req.file.filename}`
-      : rows[0]?.logo || null;
+      : currentLogo;
 
-    const data = { logo };
-    FIELDS.forEach((f) => {
-      data[f] = clean(req.body[f]);
+    const data = {
+      logo,
+      email,
+      phone: clean(req.body.phone),
+      alt_phone: clean(req.body.alt_phone),
+      address: clean(req.body.address),
+
+      // SEO Settings
+      meta_keywords: clean(req.body.meta_keywords),
+      meta_description: clean(req.body.meta_description),
+
+      // Social Media Links
+      facebook_url: clean(req.body.facebook_url),
+      instagram_url: clean(req.body.instagram_url),
+      linkedin_url: clean(req.body.linkedin_url),
+      youtube_url: clean(req.body.youtube_url),
+
+      // Legal Pages
+      terms_conditions: clean(req.body.terms_conditions),
+      privacy_policy: clean(req.body.privacy_policy),
+    };
+
+    // Save settings and contacts together
+    await settingsModel.update(data, contacts);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Settings updated successfully.',
     });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
 
-    const cols = Object.keys(data);
-    await db.query(
-      `INSERT INTO settings (id, ${cols.join(', ')})
-       VALUES (1, ${cols.map(() => '?').join(', ')})
-       ON DUPLICATE KEY UPDATE ${cols.map((c) => `${c} = VALUES(${c})`).join(', ')}`,
-      cols.map((c) => data[c])
-    );
-
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
+    next(error);
   }
 };
+
+

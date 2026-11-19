@@ -1,7 +1,11 @@
 const express = require('express');
 const ctrl = require('../controllers/speciality.controller');
 const authMiddleware = require('../middleware/auth.middleware');
-const { setUploadFolder, optionalSingle } = require('../middleware/upload.middleware');
+// const { setUploadFolder, optionalSingle } = require('../middleware/upload.middleware');
+const {
+  setUploadFolder,
+  optionalFields
+} = require('../middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -17,12 +21,14 @@ router.get(
   authMiddleware,
   ctrl.getOne
 );
-
 router.post(
   '/',
   authMiddleware,
   setUploadFolder('specialities'),
-  optionalSingle('about_image'),
+  optionalFields([
+    { name: 'about_image', maxCount: 1 },
+    { name: 'gallery_images', maxCount: 20 },
+  ]),
   ctrl.create
 );
 
@@ -30,9 +36,27 @@ router.put(
   '/:id',
   authMiddleware,
   setUploadFolder('specialities'),
-  optionalSingle('about_image'),
+  optionalFields([
+    { name: 'about_image', maxCount: 1 },
+    { name: 'gallery_images', maxCount: 20 },
+  ]),
   ctrl.update
 );
+// router.post(
+//   '/',
+//   authMiddleware,
+//   setUploadFolder('specialities'),
+//   optionalSingle('about_image'),
+//   ctrl.create
+// );
+
+// router.put(
+//   '/:id',
+//   authMiddleware,
+//   setUploadFolder('specialities'),
+//   optionalSingle('about_image'),
+//   ctrl.update
+// );
 
 router.delete(
   '/:id',

@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
-export function usePagedList(api, extraParams = {}) {
+// export function usePagedList(api, extraParams = {}) {
+export function usePagedList(api, extraParams = {}, pageSize = 10) {
   const [rows, setRows] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const limit = 10;
+  // const limit = 10;
+  const limit = pageSize;
 
   async function load(nextPage = page, nextSearch = search) {
     setLoading(true);

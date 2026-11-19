@@ -3,54 +3,76 @@ import toast from "react-hot-toast";
 import Drawer from "../../components/Drawer";
 import { healthLibraryApi } from "../../api";
 import api from "../../api/client";
+
+/* Every field the form can send. Keys not shown for a tab are simply left empty. */
 const empty = {
   patient_name: "",
   phone: "",
   email: "",
   country: "",
-  disease: "",
-  hospital_name: "",
+  preferred_location: "",
+  age: "",
+  gender: "",
+  visited_before: "",
+  appointment_date: "",
+  preferred_time: "",
+  department: "",
+  preferred_doctor: "",
+  contact_consent: "0",
   subject: "",
   message: "",
-  preferred_time: "",
+  disease: "",
+  hospital_name: "",
   treatment_start_date: "",
   treatment_end_date: "",
   amount: "",
   post_op_details: "",
 };
+
 const names = {
-  estimate: "Request an Estimate",
-  contact: "Contact Form",
-  callback: "Request a Call",
+  estimate: "Book Appointment",
+  contact: "Contact Enquiry",
+  callback: "Call Request",
 };
+
+/*
+  Fields per tab: [key, label, kind, options?]
+  kind: text | email | tel | number | date | time | select | textarea | checkbox
+*/
 const fields = {
   estimate: [
-    ["patient_name", "Name"],
-    ["phone", "Phone"],
-    ["email", "Email"],
-    ["country", "Country"],
-    ["disease", "Disease / Speciality"],
-    ["hospital_name", "Hospital"],
-    ["treatment_start_date", "Start Date"],
-    ["treatment_end_date", "End Date"],
-    ["amount", "Amount"],
-    ["message", "Message"],
+    ["patient_name", "Patient name", "text"],
+    ["phone", "Mobile number", "tel"],
+    ["email", "Email address", "email"],
+    ["country", "City / Country", "text"],
+    ["preferred_location", "Preferred Kaizen Oncology location", "text"],
+    ["age", "Age", "number"],
+    ["gender", "Gender", "select", ["Male", "Female", "Other"]],
+    ["visited_before", "Have you visited us before?", "select", ["Yes", "No"]],
+    ["appointment_date", "Preferred appointment date", "date"],
+    ["preferred_time", "Preferred appointment time", "time"],
+    ["department", "Department", "text"],
+    ["preferred_doctor", "Preferred doctor", "text"],
+    ["message", "Additional information", "textarea"],
+    ["contact_consent", "Agreed to be contacted about this appointment", "checkbox"],
   ],
   contact: [
-    ["patient_name", "Name"],
-    ["phone", "Phone"],
-    ["email", "Email"],
-    ["subject", "Subject"],
-    ["message", "Message"],
+    ["patient_name", "Name", "text"],
+    ["email", "Email address", "email"],
+    ["phone", "Mobile number", "tel"],
+    ["message", "How can we help?", "textarea"],
   ],
   callback: [
-    ["patient_name", "Name"],
-    ["phone", "Phone"],
-    ["email", "Email"],
-    ["preferred_time", "Preferred Time"],
-    ["message", "Message"],
+    ["patient_name", "Name", "text"],
+    ["phone", "Phone", "tel"],
+    ["email", "Email", "email"],
+    ["preferred_time", "Preferred time", "text"],
+    ["message", "Message", "textarea"],
   ],
 };
+
+const REQUIRED = ["patient_name", "phone"];
+
 const parse = (x) => {
   try {
     const v = typeof x === "string" ? JSON.parse(x || "[]") : x || [];
@@ -59,6 +81,31 @@ const parse = (x) => {
     return [];
   }
 };
+
+/* MySQL DATE may arrive as "2026-11-20" or as an ISO timestamp. Return yyyy-mm-dd. */
+function toDateInput(value) {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+const isOn = (v) => ["1", "true", "on", "yes"].includes(String(v).toLowerCase());
+
+const fileBox = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  padding: "9px 12px",
+  marginTop: 7,
+  border: "1px solid #e2e8f0",
+  borderRadius: 8,
+};
+
 export default function HealthLibraryForm({
   open,
   id,
@@ -68,18 +115,17 @@ export default function HealthLibraryForm({
   onSaved,
 }) {
   const [form, setForm] = useState(empty);
-
   const [reports, setReports] = useState([]);
-const [files, setFiles] = useState([]);
-const [busy, setBusy] = useState(false);
-  
+  const [files, setFiles] = useState([]);
+  const [busy, setBusy] = useState(false);
+
   useEffect(() => {
     if (!open) return;
     setForm(empty);
     setReports([]);
     setFiles([]);
-    
-    if (id)
+
+    if (id) {
       healthLibraryApi
         .get(id)
         .then(({ data }) => {
@@ -87,23 +133,32 @@ const [busy, setBusy] = useState(false);
           setForm({
             ...empty,
             ...row,
+            age: row.age ?? "",
+            appointment_date: toDateInput(row.appointment_date),
             treatment_start_date: row.treatment_start_date?.slice(0, 10) || "",
             treatment_end_date: row.treatment_end_date?.slice(0, 10) || "",
+            contact_consent: row.contact_consent ? "1" : "0",
           });
           setReports(parse(row.previous_reports));
         })
         .catch(() => toast.error("Unable to load record"));
-  // }, [open, id]);
+    }
   }, [open, id, type]);
+
+  function setValue(key, value) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
   async function submit(e) {
     e.preventDefault();
     if (view) return;
     setBusy(true);
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && typeof v !== "object")
-          fd.append(k, v);
+      // send only the form's own fields (not id, slug, form_details, etc.)
+      Object.keys(empty).forEach((k) => {
+        const v = form[k];
+        fd.append(k, v === null || v === undefined ? "" : v);
       });
       fd.append("type", type);
       files.forEach((f) => fd.append("reports[]", f));
@@ -118,6 +173,7 @@ const [busy, setBusy] = useState(false);
       setBusy(false);
     }
   }
+
   async function download(index, name) {
     try {
       const response = await api.get(`/health-library/${id}/reports/${index}`, {
@@ -135,6 +191,99 @@ const [busy, setBusy] = useState(false);
       toast.error("Download failed");
     }
   }
+
+  function addFiles(e) {
+    const newFiles = Array.from(e.target.files || []);
+    setFiles((previous) => {
+      const combined = [...previous];
+      newFiles.forEach((file) => {
+        const exists = combined.some(
+          (f) =>
+            f.name === file.name &&
+            f.size === file.size &&
+            f.lastModified === file.lastModified
+        );
+        if (!exists) combined.push(file);
+      });
+      if (combined.length > 20) {
+        toast.error("Maximum 20 medical reports allowed.");
+        return previous;
+      }
+      return combined;
+    });
+    e.target.value = ""; // allow picking more files again
+  }
+
+  function renderField([key, label, kind, options]) {
+    const value = form[key] ?? "";
+    const required = REQUIRED.includes(key);
+    const full = kind === "textarea" || kind === "checkbox";
+    const wrapperStyle = full ? { gridColumn: "1 / -1" } : undefined;
+
+    if (kind === "checkbox") {
+      return (
+        <div key={key} style={wrapperStyle}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 400, margin: 0 }}
+          >
+            <input
+              type="checkbox"
+              disabled={view}
+              checked={isOn(value)}
+              onChange={(e) => setValue(key, e.target.checked ? "1" : "0")}
+              style={{ width: "auto", flex: "none" }}
+            />
+            {label}
+          </label>
+        </div>
+      );
+    }
+
+    return (
+      <div key={key} style={wrapperStyle}>
+        <label>
+          {label}
+          {required ? " *" : ""}
+        </label>
+
+        {kind === "textarea" && (
+          <textarea
+            rows={4}
+            disabled={view}
+            value={value}
+            onChange={(e) => setValue(key, e.target.value)}
+          />
+        )}
+
+        {kind === "select" && (
+          <select disabled={view} value={value} onChange={(e) => setValue(key, e.target.value)}>
+            <option value="">Select</option>
+            {/* keep any older/different saved value so it is not lost on save */}
+            {value && !options.includes(value) ? <option value={value}>{value}</option> : null}
+            {options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {kind !== "textarea" && kind !== "select" && (
+          <input
+            disabled={view}
+            required={required}
+            type={
+              kind === "time" && value && !/^\d{2}:\d{2}/.test(value) ? "text" : kind
+            }
+            min={kind === "number" ? 0 : undefined}
+            value={kind === "time" && /^\d{2}:\d{2}/.test(value) ? value.slice(0, 5) : value}
+            onChange={(e) => setValue(key, e.target.value)}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <Drawer
       open={open}
@@ -143,239 +292,71 @@ const [busy, setBusy] = useState(false);
       width="720px"
     >
       <form className="drawer-body form-grid" onSubmit={submit}>
-        {fields[type].map(([key, label]) => (
-          <div key={key}>
-            <label>
-              {label}
-              {["patient_name", "phone"].includes(key) ? " *" : ""}
-            </label>
-            {key === "message" ? (
-              <textarea
-                rows={4}
-                disabled={view}
-                value={form[key] || ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, [key]: e.target.value }))
-                }
-              />
-            ) : (
-              <input
-                disabled={view}
-                required={["patient_name", "phone"].includes(key)}
-                type={
-                  key === "email"
-                    ? "email"
-                    : key.includes("date")
-                      ? "date"
-                      : key === "amount"
-                        ? "number"
-                        : "text"
-                }
-                value={form[key] || ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, [key]: e.target.value }))
-                }
-              />
-            )}
-          </div>
-        ))}
-        
-{type === "estimate" && (
-  <div style={{ gridColumn: "1 / -1" }}>
-    <label>Medical Reports</label>
+        {fields[type].map(renderField)}
 
-    {!view && (
-      <>
-        <input
-          type="file"
-          name="reports[]"
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-          multiple
-          onChange={(e) => {
-            const newFiles = Array.from(
-              e.target.files || []
-            );
-
-            setFiles((previous) => {
-              const combined = [...previous];
-
-              newFiles.forEach((file) => {
-                const exists = combined.some(
-                  (f) =>
-                    f.name === file.name &&
-                    f.size === file.size &&
-                    f.lastModified === file.lastModified
-                );
-
-                if (!exists) {
-                  combined.push(file);
-                }
-              });
-
-              if (combined.length > 20) {
-                toast.error(
-                  "Maximum 20 medical reports allowed."
-                );
-                return previous;
-              }
-
-              return combined;
-            });
-
-            // Allow selecting more files again
-            e.target.value = "";
-          }}
-          style={{
-            width: "100%",
-            marginTop: 8,
-          }}
-        />
-
-        <p
-          style={{
-            fontSize: 12,
-            color: "#64748b",
-            marginTop: 6,
-          }}
-        >
-          You can select multiple files or add more
-          files one by one. PDF, images and Word
-          documents are supported.
-        </p>
-      </>
-    )}
-
-    {/* NEWLY SELECTED FILES */}
-    {files.length > 0 && !view && (
-      <div style={{ marginTop: 14 }}>
-        <strong>
-          Selected Medical Reports ({files.length})
-        </strong>
-
-        {files.map((file, index) => (
-          <div
-            key={`${file.name}-${index}`}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              padding: "9px 12px",
-              marginTop: 7,
-              border: "1px solid #e2e8f0",
-              borderRadius: 8,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 13,
-                overflowWrap: "anywhere",
-              }}
-            >
-              {index + 1}. {file.name}
-            </span>
-
-            <button
-              type="button"
-              className="btn secondary small"
-              onClick={() =>
-                setFiles((previous) =>
-                  previous.filter((_, i) => i !== index)
-                )
-              }
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-
-    {/* ALREADY SAVED REPORTS */}
-    {reports.length > 0 && (
-      <div style={{ marginTop: 16 }}>
-        <strong>
-          Uploaded Medical Reports ({reports.length})
-        </strong>
-
-        {reports.map((report, index) => (
-          <div
-            key={index}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              padding: "9px 12px",
-              marginTop: 7,
-              border: "1px solid #e2e8f0",
-              borderRadius: 8,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 13,
-                overflowWrap: "anywhere",
-              }}
-            >
-              {index + 1}. {report.name}
-            </span>
-
-            <button
-              type="button"
-              className="btn secondary small"
-              onClick={() =>
-                download(index, report.name)
-              }
-            >
-              Download
-            </button>
-          </div>
-        ))}
-      </div>
-    )}
-  </div>
-)}
-
-        {/* {type === "estimate" && (
+        {type === "estimate" && (
           <div style={{ gridColumn: "1 / -1" }}>
-            <label>Medical reports</label>
+            <label>Medical Reports</label>
+
             {!view && (
-              <input
-                type="file"
-                name="reports[]"
-                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-                multiple
-               onChange={(e) => {
-                  const chosenFiles = Array.from(e.target.files || []);
-                  setFiles(chosenFiles);
-                  setSelectedFiles(chosenFiles);
-                }}
-              />
+              <>
+                <input
+                  type="file"
+                  name="reports[]"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+                  multiple
+                  onChange={addFiles}
+                  style={{ width: "100%", marginTop: 8 }}
+                />
+                <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                  You can select multiple files or add more files one by one. PDF, images and
+                  Word documents are supported.
+                </p>
+              </>
             )}
-            {selectedFiles.length > 0 && (
-            <div style={{ marginTop: 10 }}>
-              {selectedFiles.map((file, index) => (
-                <div key={`${file.name}-${index}`} style={{ fontSize: 13, marginBottom: 5 }}>
-                  {index + 1}. {file.name}
-                </div>
-              ))}
-  </div>
-)}
-            <div>
-              {reports.map((r, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  className="btn secondary small"
-                  onClick={() => download(i, r.name)}
-                >
-                  {r.name || `Report ${i + 1}`} — Download
-                </button>
-              ))}
-            </div>
+
+            {files.length > 0 && !view && (
+              <div style={{ marginTop: 14 }}>
+                <strong>Selected Medical Reports ({files.length})</strong>
+                {files.map((file, index) => (
+                  <div key={`${file.name}-${index}`} style={fileBox}>
+                    <span style={{ fontSize: 13, overflowWrap: "anywhere" }}>
+                      {index + 1}. {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn secondary small"
+                      onClick={() => setFiles((prev) => prev.filter((_, i) => i !== index))}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {reports.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                <strong>Uploaded Medical Reports ({reports.length})</strong>
+                {reports.map((report, index) => (
+                  <div key={index} style={fileBox}>
+                    <span style={{ fontSize: 13, overflowWrap: "anywhere" }}>
+                      {index + 1}. {report.name}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn secondary small"
+                      onClick={() => download(index, report.name)}
+                    >
+                      Download
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )} */}
+        )}
+
         <div
           className="drawer-actions"
           style={{
@@ -402,135 +383,3 @@ const [busy, setBusy] = useState(false);
 
 
 
-
-
-
-
-
-// import { useEffect, useState } from 'react';
-// import toast from 'react-hot-toast';
-// import Drawer from '../../components/Drawer';
-// import FileUpload from '../../components/FileUpload';
-// import { healthLibraryApi } from '../../api';
-// import { toFormData } from '../../api/client';
-// import { dateInput, mediaUrl } from '../../utils';
-
-// const empty = {
-//   patient_name: '',
-//   phone: '',
-//   email: '',
-//   country: '',
-//   disease: '',
-//   treatment_start_date: '',
-//   treatment_end_date: '',
-//   amount: '',
-//   hospital_name: '',
-//   post_op_details: '',
-// };
-
-// export default function HealthLibraryForm({ open, id, onClose, onSaved }) {
-//   const [form, setForm] = useState(empty);
-//   const [file, setFile] = useState(null);
-//   const [existing, setExisting] = useState('');
-//   const [error, setError] = useState('');
-
-//   useEffect(() => {
-//     if (!open) return;
-//     setError('');
-//     setFile(null);
-//     if (!id) {
-//       setForm(empty);
-//       setExisting('');
-//       return;
-//     }
-//     healthLibraryApi.get(id).then((res) => {
-//       const d = res.data.data;
-//       setForm({
-//         ...empty,
-//         ...d,
-//         patient_name: d.patient_name || d.title || '',
-//         treatment_start_date: dateInput(d.treatment_start_date),
-//         treatment_end_date: dateInput(d.treatment_end_date),
-//         amount: d.amount ?? '',
-//       });
-//       setExisting(mediaUrl(d.previous_reports));
-//     });
-//   }, [open, id]);
-
-//   function set(key, value) {
-//     setForm((prev) => ({ ...prev, [key]: value }));
-//   }
-
-//   async function onSubmit(e) {
-//     e.preventDefault();
-//     if (!form.patient_name) {
-//       setError('Patient name is required');
-//       return;
-//     }
-//     try {
-//       const payload = toFormData(form, 'previous_reports', file);
-//       if (id) await healthLibraryApi.update(id, payload);
-//       else await healthLibraryApi.create(payload);
-//       toast.success(id ? 'Patient record updated' : 'Patient record created');
-//       onSaved?.();
-//       onClose();
-//     } catch (err) {
-//       toast.error(err.response?.data?.message || 'Save failed');
-//     }
-//   }
-
-//   return (
-//     <Drawer open={open} title={id ? 'Edit patient record' : 'Add patient record'} onClose={onClose} width="720px">
-//       <form className="drawer-body form-grid" onSubmit={onSubmit}>
-//         <div>
-//           <label>Name *</label>
-//           <input value={form.patient_name} onChange={(e) => set('patient_name', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Phone number</label>
-//           <input value={form.phone} onChange={(e) => set('phone', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Email id</label>
-//           <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Country</label>
-//           <input value={form.country} onChange={(e) => set('country', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Disease</label>
-//           <input value={form.disease} onChange={(e) => set('disease', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Hospital name</label>
-//           <input value={form.hospital_name} onChange={(e) => set('hospital_name', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Treatment starting date</label>
-//           <input type="date" value={form.treatment_start_date} onChange={(e) => set('treatment_start_date', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Treatment ending date</label>
-//           <input type="date" value={form.treatment_end_date} onChange={(e) => set('treatment_end_date', e.target.value)} />
-//         </div>
-//         <div>
-//           <label>Amount</label>
-//           <input type="number" step="0.01" value={form.amount} onChange={(e) => set('amount', e.target.value)} />
-//         </div>
-//         <div className="full">
-//           <FileUpload label="Previous reports" existingUrl={existing} onFile={setFile} />
-//         </div>
-//         <div className="full">
-//           <label>Post op details</label>
-//           <textarea value={form.post_op_details || ''} onChange={(e) => set('post_op_details', e.target.value)} />
-//         </div>
-//         {error ? <div className="error full">{error}</div> : null}
-//         <div className="actions full">
-//           <button className="btn" type="submit">Save</button>
-//           <button className="btn secondary" type="button" onClick={onClose}>Cancel</button>
-//         </div>
-//       </form>
-//     </Drawer>
-//   );
-// }

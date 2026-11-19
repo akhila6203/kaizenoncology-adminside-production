@@ -1,37 +1,18 @@
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Pencil, Trash2 } from "lucide-react";
-import DataTable from "../../components/DataTable";
+import { Trash2, X, CalendarDays, Tag, Pencil } from "lucide-react";
+import { specialitiesApi } from "../../api";
+
 import Pagination from "../../components/Pagination";
 import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+
 import { usePagedList } from "../../hooks";
 import { editorialApi } from "../../api/editorial";
 import { mediaUrl } from "../../utils";
+
 import BlogForm from "./BlogForm";
-
-const COLORS = {
-  primary: "#13899B",
-  dark: "#153F4A",
-  border: "#E1E9EF",
-  muted: "#6B7C89",
-};
-
-const buttonStyle = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 7,
-  padding: "10px 16px",
-  borderRadius: 8,
-  border: "none",
-  background: COLORS.primary,
-  color: "#FFFFFF",
-  fontSize: 13,
-  fontWeight: 600,
-  cursor: "pointer",
-  whiteSpace: "nowrap",
-};
+import "./BlogList.css";
 
 function descriptionPreview(row) {
   const html = row.content || row.short_description || "";
@@ -46,9 +27,20 @@ function descriptionPreview(row) {
     .trim();
 }
 
-function ContentTab({ kind, onAddReady }) {
-  const api = useMemo(() => editorialApi(kind), [kind]);
+function formatDate(date) {
+  if (!date) return "—";
 
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default function BlogList() {
+  const api = useMemo(() => editorialApi("blogs"), []);
+
+  // Blog page size: 12
   const {
     rows,
     total,
@@ -59,39 +51,96 @@ function ContentTab({ kind, onAddReady }) {
     onSearch,
     reload,
     limit,
-  } = usePagedList(api);
+  } = usePagedList(api, {}, 12);
+
+  const [deleting, setDeleting] = useState(null);
+  const [viewBlog, setViewBlog] = useState(null);
+  const [specialities, setSpecialities] = useState([]);
 
   const [drawer, setDrawer] = useState({
     open: false,
     id: null,
   });
 
-  const [deleting, setDeleting] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
 
-  const label = kind === "blogs" ? "Blog" : "Case Study";
+    async function loadSpecialities() {
+      try {
+        const response = await specialitiesApi.list({
+          page: 1,
+          limit: 100,
+        });
 
-  const openAdd = useCallback(() => {
-    setDrawer({ open: true, id: null });
+        const payload = response.data;
+
+        const options =
+          payload?.rows ??
+          payload?.data?.rows ??
+          payload?.data ??
+          [];
+
+        if (!cancelled) {
+          setSpecialities(
+            Array.isArray(options) ? options : []
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load specialities:",
+          error.response?.data || error
+        );
+      }
+    }
+
+    loadSpecialities();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    onAddReady(openAdd);
+  function openAdd() {
+    setDrawer({ open: true, id: null });
+  }
 
-    return () => onAddReady(null);
-  }, [onAddReady, openAdd]);
-
-  const closeDrawer = () => {
+  function closeDrawer() {
     setDrawer({ open: false, id: null });
-  };
+  }
+
+  function openView(blog) {
+    setViewBlog(blog);
+  }
+
+  function closeView() {
+    setViewBlog(null);
+  }
+
+  function getSpecialityName(blog) {
+    const speciality = specialities.find(
+      (item) =>
+        Number(item.id) === Number(blog.speciality_id)
+    );
+
+    return speciality?.name || "General";
+  }
 
   async function confirmDelete() {
     if (!deleting) return;
 
     try {
       await api.remove(deleting.id);
-      toast.success(`${label} deleted successfully`);
+
+      toast.success("Blog deleted successfully");
+
       setDeleting(null);
-      reload();
+      setViewBlog(null);
+
+      if (rows.length === 1 && page > 1) {
+        setPage(page - 1);
+      } else {
+        reload();
+      }
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Delete failed"
@@ -99,291 +148,175 @@ function ContentTab({ kind, onAddReady }) {
     }
   }
 
-  const columns = [
-    {
-      key: "thumbnail",
-      label: "Image",
-      render: (row) =>
-        row.thumbnail ? (
-          <img
-            src={mediaUrl(row.thumbnail)}
-            alt={row.title || ""}
-            style={{
-              width: 76,
-              height: 54,
-              objectFit: "cover",
-              borderRadius: 8,
-              border: `1px solid ${COLORS.border}`,
-            }}
-          />
-        ) : (
-          <div
-            style={{
-              width: 76,
-              height: 54,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "#F1F5F9",
-              borderRadius: 8,
-              color: "#94A3B8",
-              fontSize: 11,
-            }}
-          >
-            No image
-          </div>
-        ),
-    },
-    {
-      key: "title",
-      label: "Name",
-      render: (row) => (
-        <span
-          style={{
-            color: COLORS.dark,
-            fontWeight: 600,
-            minWidth: 140,
-            display: "inline-block",
-          }}
-        >
-          {row.title}
-        </span>
-      ),
-    },
-    {
-      key: "speciality",
-      label: "Speciality",
-      render: (row) => (
-        <span
-          style={{
-            display: "inline-block",
-            background: "#EAF5F5",
-            color: "#087A86",
-            borderRadius: 20,
-            padding: "6px 10px",
-            fontSize: 12,
-          }}
-        >
-          {row.speciality_name ||
-            row.speciality?.name ||
-            "—"}
-        </span>
-      ),
-    },
-    {
-      key: "content",
-      label: "Description",
-      render: (row) => {
-        const description = descriptionPreview(row);
-
-        return (
-          <span
-            title={description}
-            style={{
-              display: "block",
-              maxWidth: 250,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              color: "#64748B",
-            }}
-          >
-            {description || "—"}
-          </span>
-        );
-      },
-    },
-    {
-      key: "created_at",
-      label: "Added Date",
-      render: (row) => (
-        <span style={{ whiteSpace: "nowrap" }}>
-          {row.created_at
-            ? new Date(row.created_at).toLocaleDateString(
-                "en-IN",
-                {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                }
-              )
-            : "—"}
-        </span>
-      ),
-    },
-    {
-      key: "is_published",
-      label: "Status",
-      render: (row) => {
-        const published = Number(row.is_published) === 1;
-
-        return (
-          <span
-            style={{
-              display: "inline-block",
-              padding: "6px 11px",
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: 600,
-              background: published
-                ? "#ECFDF5"
-                : "#FFFBEB",
-              color: published
-                ? "#047857"
-                : "#B45309",
-            }}
-          >
-            {published ? "Published" : "Draft"}
-          </span>
-        );
-      },
-    },
-    {
-  key: "actions",
-  label: "Actions",
-  render: (row) => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-      }}
-    >
-      {/* EDIT ICON */}
-      <button
-        type="button"
-        title={`Edit ${label}`}
-        aria-label={`Edit ${row.title}`}
-        onClick={() =>
-          setDrawer({ open: true, id: row.id })
-        }
-        style={{
-          width: "34px",
-          height: "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "1px solid #cfe2e0",
-          borderRadius: "7px",
-          background: "#f0f8f7",
-          color: "#064b50",
-          cursor: "pointer",
-        }}
-      >
-        <Pencil size={16} />
-      </button>
-
-      {/* DELETE ICON */}
-      <button
-        type="button"
-        title={`Delete ${label}`}
-        aria-label={`Delete ${row.title}`}
-        onClick={() => setDeleting(row)}
-        style={{
-          width: "34px",
-          height: "34px",
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          border: "1px solid #fecaca",
-          borderRadius: "7px",
-          background: "#fef2f2",
-          color: "#dc2626",
-          cursor: "pointer",
-        }}
-      >
-        <Trash2 size={16} />
-      </button>
-    </div>
-  ),
-},
-  ];
-
   return (
-    <>
-      <div
+    <div className="blog-list-page">
+
+      {/* SEARCH + ADD BLOG - EXISTING DESIGN */}
+      <form
+        onSubmit={onSearch}
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 12,
+          gap: 10,
+          width: "100%",
           marginBottom: 18,
         }}
       >
-        <form
-          onSubmit={onSearch}
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search blogs..."
           style={{
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "nowrap",
-            alignItems: "center",
-            gap: 10,
-            width: "auto",
-            maxWidth: "100%",
+            width: 270,
+            maxWidth: "35%",
+            minWidth: 0,
+            height: 40,
+            padding: "9px 12px",
+            borderRadius: 8,
+            border: "1px solid #E1E9EF",
+            outlineColor: "#13899B",
+            boxSizing: "border-box",
+          }}
+        />
+
+        <button
+          type="submit"
+          style={{
+            padding: "10px 16px",
+            height: 40,
+            border: "none",
+            borderRadius: 8,
+            background: "#E7EDF2",
+            color: "#153F4A",
+            fontWeight: 600,
+            cursor: "pointer",
+            flexShrink: 0,
           }}
         >
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={`Search ${
-              kind === "blogs" ? "blogs" : "case studies"
-            }...`}
-            style={{
-              width: 270,
-              maxWidth: "55vw",
-              minWidth: 0,
-              flexShrink: 1,
-              height: 40,
-              padding: "9px 12px",
-              borderRadius: 8,
-              border: `1px solid ${COLORS.border}`,
-              outlineColor: COLORS.primary,
-              background: "#FFFFFF",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <button
-            type="submit"
-            style={{
-              ...buttonStyle,
-              height: 40,
-              background: "#E7EDF2",
-              color: COLORS.dark,
-              flexShrink: 0,
-            }}
-          >
-            Search
-          </button>
-        </form>
+          Search
+        </button>
 
         <span
           style={{
-            color: COLORS.muted,
-            fontSize: 13,
+            marginLeft: "auto",
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+            color: "#6B7C89",
+            fontSize: 16,
           }}
         >
-          {total} {total === 1 ? label : `${label}s`}
+          {total} {total === 1 ? "Blog" : "Blogs"}
         </span>
-      </div>
 
-      <div
-        style={{
-          background: "#FFFFFF",
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 12,
-          padding: 15,
-          overflowX: "auto",
-          boxShadow: "0 2px 10px rgba(15,61,76,0.03)",
-        }}
-      >
-        <div style={{ minWidth: 900 }}>
-          <DataTable rows={rows} columns={columns} />
+        <button
+          type="button"
+          onClick={openAdd}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "10px 16px",
+            height: 40,
+            borderRadius: 8,
+            border: "none",
+            background: "#13899B",
+            color: "#FFFFFF",
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: "pointer",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ fontSize: 19, lineHeight: 1 }}>+</span>
+          Add New Blog
+        </button>
+      </form>
+
+      {/* BLOG GRID */}
+      {rows.length > 0 ? (
+        <div className="blog-grid">
+          {rows.map((blog) => {
+            const published =
+              Number(blog.is_published) === 1;
+
+            const description = descriptionPreview(blog);
+
+            return (
+              <article
+                className="blog-card"
+                key={blog.id}
+              >
+                <button
+                  type="button"
+                  className="blog-card-view"
+                  onClick={() => openView(blog)}
+                  aria-label={`View ${blog.title}`}
+                >
+                  {/* BLOG IMAGE */}
+                  <div className="blog-card-image-wrap">
+                    {blog.thumbnail ? (
+                      <img
+                        src={mediaUrl(blog.thumbnail)}
+                        alt={blog.title || "Blog image"}
+                        className="blog-card-image"
+                      />
+                    ) : (
+                      <div className="blog-card-no-image">
+                        No Image Available
+                      </div>
+                    )}
+
+                    <span
+                      className={`blog-card-status ${
+                        published ? "published" : "draft"
+                      }`}
+                    >
+                      {published ? "Published" : "Draft"}
+                    </span>
+                  </div>
+
+                  {/* BLOG CONTENT */}
+                  <div className="blog-card-content">
+                    <h3 className="blog-card-title">
+                      {blog.title}
+                    </h3>
+
+                    <p className="blog-card-description">
+                      {description || "No description available."}
+                    </p>
+
+                    <div className="blog-card-meta">
+                      <span>
+                        <Tag size={16} />
+                        {getSpecialityName(blog)}
+                      </span>
+
+                      <span>
+                        <CalendarDays size={16} />
+                        {formatDate(blog.created_at)}
+                      </span>
+                    </div>
+
+                  </div>
+                </button>
+              </article>
+            );
+          })}
         </div>
-      </div>
+      ) : (
+        <div className="blog-empty">
+          <h3>No blogs found</h3>
+          <p>
+            {search
+              ? "Try searching with another keyword."
+              : "Add your first blog to display it here."}
+          </p>
+        </div>
+      )}
 
+      {/* PAGINATION - SAME COMPONENT AS DOCTORS */}
       <Pagination
         page={page}
         limit={limit}
@@ -391,14 +324,126 @@ function ContentTab({ kind, onAddReady }) {
         onPage={setPage}
       />
 
+      {/* COMPLETE BLOG VIEW */}
+      {viewBlog && (
+        <div
+          className="blog-view-overlay"
+          onClick={closeView}
+        >
+          <div
+            className="blog-view-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="blog-view-header">
+              <div>
+                <span className="blog-view-eyebrow">
+                  BLOG DETAILS
+                </span>
+
+                <h2>{viewBlog.title}</h2>
+              </div>
+
+              <button
+                type="button"
+                className="blog-view-close"
+                onClick={closeView}
+                aria-label="Close blog details"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="blog-view-body">
+              {viewBlog.thumbnail && (
+                <img
+                  src={mediaUrl(viewBlog.thumbnail)}
+                  alt={viewBlog.title || "Blog image"}
+                  className="blog-view-image"
+                />
+              )}
+
+              <div className="blog-view-meta">
+                <span>
+                  <Tag size={17} />
+                  {getSpecialityName(viewBlog)}
+                </span>
+
+                <span>
+                  <CalendarDays size={17} />
+                  {formatDate(viewBlog.created_at)}
+                </span>
+
+                <span
+                  className={
+                    Number(viewBlog.is_published) === 1
+                      ? "blog-view-published"
+                      : "blog-view-draft"
+                  }
+                >
+                  {Number(viewBlog.is_published) === 1
+                    ? "Published"
+                    : "Draft"}
+                </span>
+              </div>
+
+              <div
+                className="blog-view-description"
+                dangerouslySetInnerHTML={{
+                  __html:
+                    viewBlog.content ||
+                    viewBlog.short_description ||
+                    "<p>No description available.</p>",
+                }}
+              />
+            </div>
+
+            {/* ONLY DELETE OPTION INSIDE VIEW */}
+            {/* EDIT + DELETE BUTTONS */}
+<div className="blog-view-footer">
+
+  <button
+    type="button"
+    className="blog-view-edit"
+    onClick={() => {
+      const selectedId = viewBlog.id;
+
+      setViewBlog(null);
+      setDrawer({
+        open: true,
+        id: selectedId,
+      });
+    }}
+  >
+    <Pencil size={17} />
+    Edit Blog
+  </button>
+
+  <button
+  type="button"
+  className="blog-view-delete"
+  onClick={() => {
+    setViewBlog(null);
+    setDeleting(viewBlog);
+  }}
+>
+  <Trash2 size={17} />
+  Delete Blog
+</button>
+
+</div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT BLOG DRAWER */}
       <BlogForm
-        kind={kind}
-        id={drawer.id}
         open={drawer.open}
+        id={drawer.id}
         onClose={closeDrawer}
         onSaved={reload}
       />
 
+      {/* DELETE CONFIRMATION */}
       {deleting && (
         <ConfirmDeleteModal
           title={deleting.title}
@@ -406,102 +451,6 @@ function ContentTab({ kind, onAddReady }) {
           onConfirm={confirmDelete}
         />
       )}
-    </>
-  );
-}
-
-export default function BlogList() {
-  const [tab, setTab] = useState("blogs");
-  const [addAction, setAddAction] = useState(null);
-
-  const onAddReady = useCallback((callback) => {
-    setAddAction(() => callback);
-  }, []);
-
-  const isBlogs = tab === "blogs";
-
-  return (
-    <div style={{ width: "100%", minWidth: 0 }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 12,
-          marginBottom: 22,
-        }}
-      >
-        <div
-          role="tablist"
-          aria-label="Content type"
-          style={{
-            display: "flex",
-            gap: 28,
-            alignItems: "center",
-          }}
-        >
-          {[
-            { value: "blogs", label: "Blogs" },
-            { value: "cases", label: "Case Studies" },
-          ].map((item) => {
-            const active = tab === item.value;
-
-            return (
-              <button
-                key={item.value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(item.value)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  borderBottom: active
-                    ? "3px solid #13899B"
-                    : "3px solid transparent",
-                  borderRadius: 0,
-                  padding: "12px 0 16px",
-                  fontSize: 15,
-                  fontWeight: 600,
-                  color: active
-                    ? "#087A86"
-                    : "#64748B",
-                  cursor: "pointer",
-                }}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => addAction?.()}
-          disabled={!addAction}
-          style={{
-            ...buttonStyle,
-            opacity: addAction ? 1 : 0.6,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 19,
-              lineHeight: 1,
-            }}
-          >
-            +
-          </span>
-          Add New {isBlogs ? "Blog" : "Case Study"}
-        </button>
-      </div>
-
-      <ContentTab
-        key={tab}
-        kind={tab}
-        onAddReady={onAddReady}
-      />
     </div>
   );
 }
@@ -509,53 +458,286 @@ export default function BlogList() {
 
 
 
-// import { useState } from 'react';
-// import toast from 'react-hot-toast';
-// import DataTable from '../../components/DataTable';
-// import Pagination from '../../components/Pagination';
-// import ConfirmDeleteModal from '../../components/ConfirmDeleteModal';
-// import { blogsApi } from '../../api';
-// import { usePagedList } from '../../hooks';
-// import { clip, mediaUrl } from '../../utils';
-// import BlogForm from './BlogForm';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import { useEffect, useMemo, useState } from "react";
+// import toast from "react-hot-toast";
+// import { Pencil, Trash2 } from "lucide-react";
+// import { specialitiesApi } from "../../api";
+
+// import DataTable from "../../components/DataTable";
+// import Pagination from "../../components/Pagination";
+// import ConfirmDeleteModal from "../../components/ConfirmDeleteModal";
+
+// import { usePagedList } from "../../hooks";
+// import { editorialApi } from "../../api/editorial";
+// import { mediaUrl } from "../../utils";
+
+// import BlogForm from "./BlogForm";
+
+// function descriptionPreview(row) {
+//   const html = row.content || row.short_description || "";
+
+//   return String(html)
+//     .replace(/<[^>]*>/g, " ")
+//     .replace(/&nbsp;/gi, " ")
+//     .replace(/&amp;/gi, "&")
+//     .replace(/&lt;/gi, "<")
+//     .replace(/&gt;/gi, ">")
+//     .replace(/\s+/g, " ")
+//     .trim();
+// }
 
 // export default function BlogList() {
-//   const { rows, total, page, setPage, search, setSearch, onSearch, reload, limit } = usePagedList(blogsApi);
+//   const api = useMemo(() => editorialApi("blogs"), []);
+
+//   const {
+//     rows,
+//     total,
+//     page,
+//     setPage,
+//     search,
+//     setSearch,
+//     onSearch,
+//     reload,
+//     limit,
+//   } = usePagedList(api);
+
 //   const [deleting, setDeleting] = useState(null);
-//   const [drawer, setDrawer] = useState({ open: false, id: null });
+//   const [specialities, setSpecialities] = useState([]);
+//   const [drawer, setDrawer] = useState({
+//     open: false,
+//     id: null,
+//   });
+
+//   useEffect(() => {
+//   let cancelled = false;
+
+//   async function loadSpecialities() {
+//     try {
+//       const response = await specialitiesApi.list({
+//         page: 1,
+//         limit: 100,
+//       });
+
+//       const payload = response.data;
+
+//       const options =
+//         payload?.rows ??
+//         payload?.data?.rows ??
+//         payload?.data ??
+//         [];
+
+//       if (!cancelled) {
+//         setSpecialities(
+//           Array.isArray(options) ? options : []
+//         );
+//       }
+//     } catch (error) {
+//       console.error(
+//         "Failed to load specialities:",
+//         error.response?.data || error
+//       );
+//     }
+//   }
+
+//   loadSpecialities();
+
+//   return () => {
+//     cancelled = true;
+//   };
+// }, []);
 
 //   function openAdd() {
 //     setDrawer({ open: true, id: null });
 //   }
+
 //   function openEdit(id) {
 //     setDrawer({ open: true, id });
 //   }
+
 //   function closeDrawer() {
 //     setDrawer({ open: false, id: null });
 //   }
 
 //   async function confirmDelete() {
+//     if (!deleting) return;
+
 //     try {
-//       await blogsApi.remove(deleting.id);
-//       toast.success('Blog deleted');
+//       await api.remove(deleting.id);
+
+//       toast.success("Blog deleted successfully");
 //       setDeleting(null);
 //       reload();
-//     } catch (err) {
-//       toast.error(err.response?.data?.message || 'Delete failed');
+//     } catch (error) {
+//       toast.error(
+//         error.response?.data?.message || "Delete failed"
+//       );
 //     }
 //   }
 
 //   const columns = [
-//     { key: 'thumbnail', label: 'Image', render: (r) => r.thumbnail ? <img className="thumb" src={mediaUrl(r.thumbnail)} alt="" /> : '—' },
-//     { key: 'title', label: 'Blog name' },
-//     { key: 'content', label: 'Description', render: (r) => <span className="cell-clip">{clip(r.content)}</span> },
 //     {
-//       key: 'actions',
-//       label: 'Actions',
-//       render: (r) => (
-//         <div className="actions">
-//           <button className="btn secondary small" type="button" onClick={() => openEdit(r.id)}>Edit</button>
-//           <button className="btn danger small" type="button" onClick={() => setDeleting(r)}>Delete</button>
+//       key: "thumbnail",
+//       label: "Image",
+//       render: (row) =>
+//         row.thumbnail ? (
+//           <img
+//             src={mediaUrl(row.thumbnail)}
+//             alt={row.title || ""}
+//             style={{
+//               width: 76,
+//               height: 54,
+//               objectFit: "cover",
+//               borderRadius: 8,
+//             }}
+//           />
+//         ) : (
+//           "—"
+//         ),
+//     },
+//     {
+//       key: "title",
+//       label: "Blog Name",
+//       render: (row) => (
+//         <span style={{ fontWeight: 600 }}>
+//           {row.title}
+//         </span>
+//       ),
+//     },
+//     {
+//   key: "speciality_id",
+//   label: "Speciality",
+//   render: (row) => {
+//     const speciality = specialities.find(
+//       (item) =>
+//         Number(item.id) === Number(row.speciality_id)
+//     );
+
+//     return (
+//       <span style={{ fontWeight: 500 }}>
+//         {speciality?.name || "—"}
+//       </span>
+//     );
+//   },
+// },
+//     {
+//       key: "content",
+//       label: "Description",
+//       render: (row) => {
+//         const description = descriptionPreview(row);
+
+//         return (
+//           <span
+//             title={description}
+//             style={{
+//               display: "block",
+//               maxWidth: 280,
+//               overflow: "hidden",
+//               textOverflow: "ellipsis",
+//               whiteSpace: "nowrap",
+//             }}
+//           >
+//             {description || "—"}
+//           </span>
+//         );
+//       },
+//     },
+//     {
+//       key: "created_at",
+//       label: "Added Date",
+//       render: (row) =>
+//         row.created_at
+//           ? new Date(row.created_at).toLocaleDateString(
+//               "en-IN",
+//               {
+//                 day: "2-digit",
+//                 month: "short",
+//                 year: "numeric",
+//               }
+//             )
+//           : "—",
+//     },
+//     {
+//       key: "is_published",
+//       label: "Status",
+//       render: (row) => {
+//         const published = Number(row.is_published) === 1;
+
+//         return (
+//           <span
+//             style={{
+//               color: published ? "#047857" : "#B45309",
+//               fontWeight: 600,
+//             }}
+//           >
+//             {published ? "Published" : "Draft"}
+//           </span>
+//         );
+//       },
+//     },
+//     {
+//       key: "actions",
+//       label: "Actions",
+//       render: (row) => (
+//         <div
+//           style={{
+//             display: "flex",
+//             alignItems: "center",
+//             gap: 8,
+//           }}
+//         >
+//           <button
+//             type="button"
+//             title="Edit Blog"
+//             onClick={() => openEdit(row.id)}
+//             style={{
+//               width: 34,
+//               height: 34,
+//               display: "inline-flex",
+//               alignItems: "center",
+//               justifyContent: "center",
+//               border: "1px solid #cfe2e0",
+//               borderRadius: 7,
+//               background: "#f0f8f7",
+//               color: "#064b50",
+//               cursor: "pointer",
+//             }}
+//           >
+//             <Pencil size={16} />
+//           </button>
+
+//           <button
+//             type="button"
+//             title="Delete Blog"
+//             onClick={() => setDeleting(row)}
+//             style={{
+//               width: 34,
+//               height: 34,
+//               display: "inline-flex",
+//               alignItems: "center",
+//               justifyContent: "center",
+//               border: "1px solid #fecaca",
+//               borderRadius: 7,
+//               background: "#fef2f2",
+//               color: "#dc2626",
+//               cursor: "pointer",
+//             }}
+//           >
+//             <Trash2 size={16} />
+//           </button>
 //         </div>
 //       ),
 //     },
@@ -563,18 +745,119 @@ export default function BlogList() {
 
 //   return (
 //     <div>
-//       <div className="page-head">
-//         <h1>Blogs</h1>
-//         <button className="btn" type="button" onClick={openAdd}>Add New</button>
-//       </div>
-//       <form className="toolbar" onSubmit={onSearch}>
-//         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search blogs..." />
-//         <button className="btn secondary" type="submit">Search</button>
-//       </form>
-//       <DataTable columns={columns} rows={rows} />
-//       <Pagination page={page} limit={limit} total={total} onPage={setPage} />
-//       <ConfirmDeleteModal title={deleting?.title} onClose={() => setDeleting(null)} onConfirm={confirmDelete} />
-//       <BlogForm open={drawer.open} id={drawer.id} onClose={closeDrawer} onSaved={reload} />
+  
+
+      
+// {/* SEARCH + ADD BLOG */}
+// <form
+//   onSubmit={onSearch}
+//   style={{
+//     display: "flex",
+//     alignItems: "center",
+//     gap: 10,
+//     width: "100%",
+//     marginBottom: 18,
+//   }}
+// >
+//   <input
+//     type="search"
+//     value={search}
+//     onChange={(event) => setSearch(event.target.value)}
+//     placeholder="Search blogs..."
+//     style={{
+//       width: 270,
+//       maxWidth: "35%",
+//       minWidth: 0,
+//       height: 40,
+//       padding: "9px 12px",
+//       borderRadius: 8,
+//       border: "1px solid #E1E9EF",
+//       outlineColor: "#13899B",
+//       boxSizing: "border-box",
+//     }}
+//   />
+
+//   <button
+//     type="submit"
+//     style={{
+//       padding: "10px 16px",
+//       height: 40,
+//       border: "none",
+//       borderRadius: 8,
+//       background: "#E7EDF2",
+//       color: "#153F4A",
+//       fontWeight: 600,
+//       cursor: "pointer",
+//       flexShrink: 0,
+//     }}
+//   >
+//     Search
+//   </button>
+
+//   <span
+//     style={{
+//       marginLeft: "auto",
+//       flexShrink: 0,
+//       whiteSpace: "nowrap",
+//       color: "#6B7C89",
+//       fontSize: 13,
+//     }}
+//   >
+//     {total} {total === 1 ? "Blog" : "Blogs"}
+//   </span>
+
+//   <button
+//     type="button"
+//     onClick={openAdd}
+//     style={{
+//       display: "inline-flex",
+//       alignItems: "center",
+//       gap: 7,
+//       padding: "10px 16px",
+//       height: 40,
+//       borderRadius: 8,
+//       border: "none",
+//       background: "#13899B",
+//       color: "#FFFFFF",
+//       fontSize: 13,
+//       fontWeight: 600,
+//       cursor: "pointer",
+//       whiteSpace: "nowrap",
+//       flexShrink: 0,
+//     }}
+//   >
+//     <span style={{ fontSize: 19, lineHeight: 1 }}>+</span>
+//     Add New Blog
+//   </button>
+// </form>
+
+
+//         <DataTable columns={columns} rows={rows} />
+
+//       <Pagination
+//         page={page}
+//         limit={limit}
+//         total={total}
+//         onPage={setPage}
+//       />
+
+//       {/* ADD / EDIT BLOG */}
+//       <BlogForm
+//         open={drawer.open}
+//         id={drawer.id}
+//         onClose={closeDrawer}
+//         onSaved={reload}
+//       />
+
+//       {/* DELETE BLOG */}
+//       {deleting && (
+//         <ConfirmDeleteModal
+//           title={deleting.title}
+//           onClose={() => setDeleting(null)}
+//           onConfirm={confirmDelete}
+//         />
+//       )}
 //     </div>
 //   );
 // }
+

@@ -45,6 +45,7 @@ exports.create = async (req, res, next) => {
     const data = await Blog.create({
       title: req.body.title,
       slug,
+      speciality_id: req.body.speciality_id || null,
       author_name: req.body.author_name,
       thumbnail: toPublicPath(req.file),
       category: req.body.category,
@@ -75,6 +76,10 @@ exports.update = async (req, res, next) => {
     const data = await Blog.update(existing.id, {
       title: req.body.title || existing.title,
       slug,
+      speciality_id:
+    req.body.speciality_id !== undefined
+      ? req.body.speciality_id || null
+      : existing.speciality_id,
       author_name: req.body.author_name,
       thumbnail,
       category: req.body.category,
@@ -98,6 +103,49 @@ exports.remove = async (req, res, next) => {
     deleteUploadedFile(existing.thumbnail);
     await Blog.remove(existing.id);
     res.json({ success: true, message: 'Blog deleted' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUBLIC: List published blogs
+exports.publicList = async (req, res, next) => {
+  try {
+    const { page, limit, offset } = pagination(req.query);
+
+    const data = await Blog.listPublished({
+      search: req.query.search,
+      speciality_id: req.query.speciality_id,
+      page,
+      limit,
+      offset,
+    });
+
+    res.json({
+      success: true,
+      ...data,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUBLIC: Get published blog by slug
+exports.publicGetOne = async (req, res, next) => {
+  try {
+    const row = await Blog.findPublishedBySlug(req.params.slug);
+
+    if (!row) {
+      return res.status(404).json({
+        success: false,
+        message: "Blog not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: row,
+    });
   } catch (err) {
     next(err);
   }

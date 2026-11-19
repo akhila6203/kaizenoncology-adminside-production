@@ -6,10 +6,10 @@ import CloseIcon from '@mui/icons-material/Close';
 
 const pageTitles = [
   { path: '/dashboard', title: 'Dashboard' },
-  { path: '/patients', title: 'Patients' },
+  // { path: '/patients', title: 'Patients' },
   { path: '/doctors', title: 'Doctors' },
   { path: '/specialities', title: 'Specialities' },
-  { path: '/partners', title: 'Partners' },
+  // { path: '/partners', title: 'Partners' },
   { path: '/services', title: 'Services' },
   { path: '/hospitals', title: 'Hospitals' },
   { path: '/health-library', title: 'Health Library' },

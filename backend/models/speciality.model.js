@@ -17,13 +17,11 @@ const Speciality = {
     const [[{ total }]] = await db.query(`SELECT COUNT(*) AS total FROM specialities sp ${clause}`, params);
     const [rows] = await db.query(
       `SELECT sp.*,
-        (SELECT GROUP_CONCAT(h.highlight_text ORDER BY h.sort_order SEPARATOR ', ')
-         FROM speciality_highlights h WHERE h.speciality_id = sp.id) AS highlights_text,
+        (SELECT GROUP_CONCAT(h.area_text ORDER BY h.sort_order SEPARATOR ', ')
+ FROM speciality_care_treatment_areas h WHERE h.speciality_id = sp.id) AS highlights_text,
         (SELECT GROUP_CONCAT(ss.name ORDER BY ss.sort_order SEPARATOR ', ')
-         FROM speciality_subspecialities ss WHERE ss.speciality_id = sp.id) AS subspecialities_text,
-        (SELECT GROUP_CONCAT(ai.title ORDER BY ai.sort_order SEPARATOR ', ')
- FROM speciality_ailment_items ai WHERE ai.speciality_id = sp.id) AS ailments_text
-       FROM specialities sp ${clause}
+ FROM speciality_subspecialities ss WHERE ss.speciality_id = sp.id) AS subspecialities_text
+FROM specialities sp ${clause}
        ORDER BY sp.sort_order ASC, sp.name ASC
        LIMIT ? OFFSET ?`,
       [...params, limit, offset]
@@ -31,45 +29,50 @@ const Speciality = {
     return { rows, total, page, limit };
   },
 
-  async findById(id) {
-    const [rows] = await db.query('SELECT * FROM specialities WHERE id = ? LIMIT 1', [id]);
-    const row = rows[0];
-    if (!row) return null;
-    const [highlights] = await db.query(
-      'SELECT highlight_text FROM speciality_highlights WHERE speciality_id = ? ORDER BY sort_order, id',
-      [id]
-    );
-    const [subs] = await db.query(
-      'SELECT name FROM speciality_subspecialities WHERE speciality_id = ? ORDER BY sort_order, id',
-      [id]
-    );
-    // const [ailments] = await db.query(
-    //   'SELECT name FROM speciality_ailment_items WHERE speciality_id = ? ORDER BY sort_order, id',
-    //   [id]
-    // );
-    const [ailments] = await db.query(
-  `SELECT id, title, description, sort_order
-   FROM speciality_ailment_items
-   WHERE speciality_id = ?
-   ORDER BY sort_order, id`,
-  [id]
-);
-    return {
-      ...row,
-      highlights: highlights.map((h) => h.highlight_text),
-      subspecialities: subs.map((s) => s.name),
-      // ailments: ailments.map((a) => a.name),
-      ailments: ailments.map((a) => ({
-  id: a.id,
-  title: a.title,
-  description: a.description || '',
-  sort_order: a.sort_order,
-})),
-    };
-  },
+//  (SELECT GROUP_CONCAT(ai.title ORDER BY ai.sort_order SEPARATOR ', ')
+//  FROM speciality_ailment_items ai WHERE ai.speciality_id = sp.id) AS ailments_text
 
+async findById(id) {
+  const [rows] = await db.query(
+    'SELECT * FROM specialities WHERE id = ? LIMIT 1',
+    [id]
+  );
 
+  const row = rows[0];
+  if (!row) return null;
 
+  const [highlights] = await db.query(
+    `SELECT area_text
+     FROM speciality_care_treatment_areas
+     WHERE speciality_id = ?
+     ORDER BY sort_order, id`,
+    [id]
+  );
+
+  const [subs] = await db.query(
+    `SELECT name
+     FROM speciality_subspecialities
+     WHERE speciality_id = ?
+     ORDER BY sort_order, id`,
+    [id]
+  );
+
+  // Existing speciality gallery images
+  const [galleryImages] = await db.query(
+    `SELECT id, image_path, alt_text, sort_order
+     FROM speciality_images
+     WHERE speciality_id = ?
+     ORDER BY sort_order ASC, id ASC`,
+    [id]
+  );
+
+  return {
+    ...row,
+    highlights: highlights.map((h) => h.area_text),
+    subspecialities: subs.map((s) => s.name),
+    gallery_images: galleryImages,
+  };
+},
 
 
   async create(data) {
@@ -77,18 +80,35 @@ const Speciality = {
     try {
       await conn.beginTransaction();
       const [result] = await conn.query(
-        `INSERT INTO specialities (name, slug, about_content, about_image, is_active, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          data.name,
-          data.slug,
-          data.about_content || null,
-          data.about_image || null,
-          data.is_active,
-          data.sort_order || 0,
-        ]
-      );
-      await this.replaceChildren(conn, result.insertId, data);
+  `INSERT INTO specialities
+    (name, icon_name, slug, about_content, when_to_consult,
+     about_image, is_active, sort_order)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  [
+    data.name,
+    data.icon_name,
+    data.slug,
+    data.about_content || null,
+    data.when_to_consult || null,
+    data.about_image || null,
+    data.is_active,
+    data.sort_order || 0,
+  ]
+);
+     await this.replaceChildren(conn, result.insertId, data);
+
+for (let i = 0; i < (data.galleryImages || []).length; i += 1) {
+  await conn.query(
+    `INSERT INTO speciality_images
+      (speciality_id, image_path, sort_order)
+     VALUES (?, ?, ?)`,
+    [
+      result.insertId,
+      data.galleryImages[i].image_path,
+      i,
+    ]
+  );
+}
       await conn.commit();
       return this.findById(result.insertId);
     } catch (err) {
@@ -103,21 +123,46 @@ const Speciality = {
     const conn = await db.getConnection();
     try {
       await conn.beginTransaction();
-      await conn.query(
-        `UPDATE specialities
-         SET name = ?, slug = ?, about_content = ?, about_image = ?, is_active = ?, sort_order = ?
-         WHERE id = ?`,
-        [
-          data.name,
-          data.slug,
-          data.about_content || null,
-          data.about_image,
-          data.is_active,
-          data.sort_order || 0,
-          id,
-        ]
-      );
+     await conn.query(
+  `UPDATE specialities
+   SET name = ?, icon_name = ?, slug = ?, about_content = ?,
+       when_to_consult = ?, about_image = ?, is_active = ?,
+       sort_order = ?
+   WHERE id = ?`,
+  [
+    data.name,
+    data.icon_name,
+    data.slug,
+    data.about_content || null,
+    data.when_to_consult || null,
+    data.about_image,
+    data.is_active,
+    data.sort_order || 0,
+    id,
+  ]
+);
       await this.replaceChildren(conn, id, data);
+
+    const [[{ maxSortOrder }]] = await conn.query(
+  `SELECT COALESCE(MAX(sort_order), -1) AS maxSortOrder
+   FROM speciality_images
+   WHERE speciality_id = ?`,
+  [id]
+);
+
+for (let i = 0; i < (data.galleryImages || []).length; i += 1) {
+  await conn.query(
+    `INSERT INTO speciality_images
+      (speciality_id, image_path, sort_order)
+     VALUES (?, ?, ?)`,
+    [
+      id,
+      data.galleryImages[i].image_path,
+      maxSortOrder + i + 1,
+    ]
+  );
+}
+
       await conn.commit();
       return this.findById(id);
     } catch (err) {
@@ -129,15 +174,15 @@ const Speciality = {
   },
 
   async replaceChildren(conn, specialityId, data) {
-    await conn.query('DELETE FROM speciality_highlights WHERE speciality_id = ?', [specialityId]);
+    await conn.query('DELETE FROM speciality_care_treatment_areas WHERE speciality_id = ?', [specialityId]);
     await conn.query('DELETE FROM speciality_subspecialities WHERE speciality_id = ?', [specialityId]);
-    await conn.query('DELETE FROM speciality_ailment_items WHERE speciality_id = ?', [specialityId]);
+    // await conn.query('DELETE FROM speciality_ailment_items WHERE speciality_id = ?', [specialityId]);
 
     for (let i = 0; i < (data.highlights || []).length; i += 1) {
-      await conn.query(
-        'INSERT INTO speciality_highlights (speciality_id, highlight_text, sort_order) VALUES (?, ?, ?)',
-        [specialityId, data.highlights[i], i]
-      );
+    await conn.query(
+  'INSERT INTO speciality_care_treatment_areas (speciality_id, area_text, sort_order) VALUES (?, ?, ?)',
+  [specialityId, data.highlights[i], i]
+);
     }
     const usedSlugs = new Set();
     for (let i = 0; i < (data.subspecialities || []).length; i += 1) {
@@ -159,29 +204,25 @@ const Speciality = {
     //     [specialityId, data.ailments[i], i]
     //   );
     // }
-    for (let i = 0; i < (data.ailments || []).length; i += 1) {
-  const item = data.ailments[i];
+//     for (let i = 0; i < (data.ailments || []).length; i += 1) {
+//   const item = data.ailments[i];
 
-  await conn.query(
-    `INSERT INTO speciality_ailment_items
-      (speciality_id, title, description, sort_order)
-     VALUES (?, ?, ?, ?)`,
-    [
-      specialityId,
-      item.title,
-      item.description || null,
-      i,
-    ]
-  );
-}
+//   await conn.query(
+//     `INSERT INTO speciality_ailment_items
+//       (speciality_id, title, description, sort_order)
+//      VALUES (?, ?, ?, ?)`,
+//     [
+//       specialityId,
+//       item.title,
+//       item.description || null,
+//       i,
+//     ]
+//   );
+// }
   },
 
-
 async findPublicDetailsBySlug(slug) {
-  /* =========================================
-     SPECIALITY MAIN DATA
-  ========================================= */
-
+  // SPECIALITY MAIN DATA
   const [rows] = await db.query(
     `SELECT *
      FROM specialities
@@ -199,71 +240,41 @@ async findPublicDetailsBySlug(slug) {
 
   const specialityId = row.id;
 
-
-  /* =========================================
-     RELATED DATA
-     Run queries parallel for better performance
-  ========================================= */
-
+  // RELATED DATA
   const [
     [highlights],
     [subspecialities],
-    [ailments],
+    [galleryImages],
     [stories],
   ] = await Promise.all([
-
-    /* HIGHLIGHTS */
+    // CARE & TREATMENT AREAS
     db.query(
-      `SELECT
-         id,
-         highlight_text,
-         sort_order
-       FROM speciality_highlights
+      `SELECT id, area_text, sort_order
+       FROM speciality_care_treatment_areas
        WHERE speciality_id = ?
        ORDER BY sort_order ASC, id ASC`,
       [specialityId]
     ),
 
-
-    /* SUB SPECIALITIES */
+    // SUB SPECIALITIES
     db.query(
-      `SELECT
-         id,
-         name,
-         slug,
-         sort_order
+      `SELECT id, name, slug, sort_order
        FROM speciality_subspecialities
        WHERE speciality_id = ?
        ORDER BY sort_order ASC, id ASC`,
       [specialityId]
     ),
 
-
-    /* AILMENTS */
-    // db.query(
-    //   `SELECT
-    //      id,
-    //      name,
-    //      sort_order
-    //    FROM speciality_ailment_items
-    //    WHERE speciality_id = ?
-    //    ORDER BY sort_order ASC, id ASC`,
-    //   [specialityId]
-    // ),
+    // SPECIALITY GALLERY IMAGES
     db.query(
-  `SELECT
-     id,
-     title,
-     description,
-     sort_order
-   FROM speciality_ailment_items
-   WHERE speciality_id = ?
-   ORDER BY sort_order ASC, id ASC`,
-  [specialityId]
-),
+      `SELECT id, image_path, alt_text, sort_order
+       FROM speciality_images
+       WHERE speciality_id = ?
+       ORDER BY sort_order ASC, id ASC`,
+      [specialityId]
+    ),
 
-
-    /* OUR STORIES */
+    // PATIENT STORIES
     db.query(
       `SELECT
          id,
@@ -281,31 +292,13 @@ async findPublicDetailsBySlug(slug) {
     ),
   ]);
 
-
-  /* =========================================
-     FINAL USER-SIDE RESPONSE
-  ========================================= */
-
+  // PUBLIC RESPONSE
   return {
     ...row,
-
-    highlights:
-      highlights.map(
-        (item) =>
-          item.highlight_text
-      ),
-
+    highlights: highlights.map((item) => item.area_text),
     subspecialities,
-
-    ailments: ailments.map((item) => ({
-  id: item.id,
-  title: item.title,
-  description: item.description || "",
-  sort_order: item.sort_order,
-})),
-
-    patient_stories:
-      stories,
+    gallery_images: galleryImages,
+    patient_stories: stories,
   };
 },
 
@@ -323,3 +316,5 @@ async findPublicDetailsBySlug(slug) {
 };
 
 module.exports = Speciality;
+
+
