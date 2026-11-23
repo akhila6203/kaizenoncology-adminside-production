@@ -110,8 +110,8 @@ function build(body = {}, existing = {}) {
     text(
       body.preferredLocation ||
         body.location ||
-        body.kaizen_location ||
-        body.preferred_kaizen_location
+        body.kimsrenova_location ||
+        body.preferred_kimsrenova_location
     ) ||
     null;
   data.appointment_date =

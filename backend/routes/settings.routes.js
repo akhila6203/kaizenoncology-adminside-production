@@ -3,9 +3,10 @@ const express = require('express');
 
 const ctrl = require('../controllers/settings.controller');
 
+
 const {
   setUploadFolder,
-  optionalSingle,
+  optionalFields,
 } = require('../middleware/upload.middleware');
 
 const router = express.Router();
@@ -13,11 +14,14 @@ const router = express.Router();
 // Get settings
 router.get('/', ctrl.get);
 
-// Update settings with optional logo upload
+// Update settings with optional Logo 1 and Logo 2 uploads
 router.put(
   '/',
   setUploadFolder('settings'),
-  optionalSingle('logo'),
+  optionalFields([
+    { name: 'logo', maxCount: 1 },
+    { name: 'logo2', maxCount: 1 },
+  ]),
   ctrl.update
 );
 
@@ -28,24 +32,3 @@ module.exports = router;
 
 
 
-
-
-
-
-
-// const express = require('express');
-// const ctrl = require('../controllers/settings.controller');
-// const { setUploadFolder, optionalSingle } = require('../middleware/upload.middleware');
-
-// const router = express.Router();
-
-// router.get('/', ctrl.get);
-
-// router.put(
-//   '/',
-//   setUploadFolder('settings'),
-//   optionalSingle('logo'),
-//   ctrl.update
-// );
-
-// module.exports = router;

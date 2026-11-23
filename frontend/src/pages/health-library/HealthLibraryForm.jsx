@@ -45,7 +45,7 @@ const fields = {
     ["phone", "Mobile number", "tel"],
     ["email", "Email address", "email"],
     ["country", "City / Country", "text"],
-    ["preferred_location", "Preferred Kaizen Oncology location", "text"],
+    ["preferred_location", "Preferred KIMS RENOVA location", "text"],
     ["age", "Age", "number"],
     ["gender", "Gender", "select", ["Male", "Female", "Other"]],
     ["visited_before", "Have you visited us before?", "select", ["Yes", "No"]],

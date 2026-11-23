@@ -105,13 +105,23 @@ exports.update = async (req, res, next) => {
 
     // Keep existing logo if no new logo is uploaded
     const currentLogo = await settingsModel.getLogo();
+const currentLogo2 = await settingsModel.getLogo2();
 
-    const logo = req.file
-      ? `/uploads/settings/${req.file.filename}`
-      : currentLogo;
+const logoFile = req.files?.logo?.[0];
+const logo2File = req.files?.logo2?.[0];
+
+
+const logo = logoFile
+  ? `/uploads/settings/${logoFile.filename}`
+  : currentLogo;
+
+const logo2 = logo2File
+  ? `/uploads/settings/${logo2File.filename}`
+  : currentLogo2;
 
     const data = {
       logo,
+      logo2,
       email,
       phone: clean(req.body.phone),
       alt_phone: clean(req.body.alt_phone),

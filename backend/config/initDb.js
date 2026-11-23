@@ -19,7 +19,7 @@ async function initDatabase() {
   const host = process.env.DB_HOST || 'localhost';
   const user = process.env.DB_USER || 'root';
   const password = process.env.DB_PASSWORD || '';
-  const database = process.env.DB_NAME || 'kaizenoncology';
+  const database = process.env.DB_NAME || 'kimsrenova';
   const port = Number(process.env.DB_PORT || 3306);
 
   const conn = await mysql.createConnection({

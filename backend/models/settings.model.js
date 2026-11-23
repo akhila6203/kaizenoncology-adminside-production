@@ -37,6 +37,14 @@ const settingsModel = {
     return rows[0]?.logo || null;
   },
 
+  getLogo2: async () => {
+  const [rows] = await db.query(
+    "SELECT logo2 FROM settings WHERE id = 1 LIMIT 1"
+  );
+
+  return rows[0]?.logo2 || null;
+},
+
   // Update settings and contacts together
   update: async (data, contacts) => {
     const connection = await db.getConnection();

@@ -13,6 +13,9 @@ import HealthLibraryList from './pages/health-library/HealthLibraryList';
  import FaqList from './pages/faqs/FaqList';
 //  import Partners from './pages/partners/partners';
  import Settings from './pages/settings/settings';
+ import TechnologiesPage from "./pages/technologies/TechnologiesPage";
+ import ServicesPage from "./pages/services/ServicesPage";
+
 
 export default function App() {
   return (
@@ -33,6 +36,8 @@ export default function App() {
      {/* <Route path="/partners" element={<ProtectedRoute><Partners /></ProtectedRoute>} /> */}
 {/* <Route path="*" element={<Navigate to="/dashboard" replace />} /> */}
 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+<Route path="/technologies" element={<ProtectedRoute><TechnologiesPage /></ProtectedRoute>} />
+<Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
     </Routes>
   );
 }

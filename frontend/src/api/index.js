@@ -1,4 +1,5 @@
 export { default as authApi } from './auth';
+import serviceContentApi from './serviceContent';
 export { default as dashboardApi } from './dashboard';
 export { default as hospitalsApi } from './hospitals';
 export { default as specialitiesApi } from './specialities';
@@ -10,3 +11,5 @@ export { default as blogsApi } from './blogs';
 export { default as faqsApi } from './faqs';
 export { default as partnersApi } from './partners';
 export { default as settingsApi } from './settings';
+export { default as technologyDetailsApi } from './technologyDetails';
+export { default as serviceContentApi } from './serviceContent';

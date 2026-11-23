@@ -87,7 +87,7 @@ function DoctorProfile({ doctor, loading, onClose, onEdit, onDelete }) {
       >
         <header className="doctor-profile-header">
           <div>
-            <span className="doctor-profile-kicker">Kaizen Oncology Hospital</span>
+            <span className="doctor-profile-kicker">KIMS RENOVA Hospital</span>
             <h2>Doctor Profile</h2>
           </div>
 

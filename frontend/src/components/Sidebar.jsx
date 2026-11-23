@@ -15,6 +15,9 @@ import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 // import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 
+import BiotechOutlinedIcon from "@mui/icons-material/BiotechOutlined";
+import MiscellaneousServicesOutlinedIcon from "@mui/icons-material/MiscellaneousServicesOutlined";
+
 import { settingsApi } from "../api";
 import { mediaUrl } from "../utils";
 
@@ -23,6 +26,8 @@ const links = [
   // { to: "/patients", label: "Patients", Icon: GroupOutlinedIcon },
   { to: "/doctors", label: "Doctors", Icon: MedicalServicesOutlinedIcon },
   { to: "/specialities", label: "Specialities", Icon: CategoryOutlinedIcon },
+  { to: "/technologies", label: "Technologies", Icon: BiotechOutlinedIcon },
+  { to: "/services", label: "Services", Icon: MiscellaneousServicesOutlinedIcon },
   // { to: "/partners", label: "Partners", Icon: HandshakeOutlinedIcon },
   //   { to: "/services", label: "Services", Icon: MiscellaneousServicesOutlinedIcon },
   // { to: "/hospitals", label: "Hospitals / Locations", Icon: ApartmentOutlinedIcon },

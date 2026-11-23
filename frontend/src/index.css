@@ -2159,17 +2159,27 @@ body,
 }
 
 /* Logo column */
-
 .settings-logo-section {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-content: start;
 }
 
+.settings-logo-section > h2 {
+  grid-column: 1 / -1;
+}
+
+.settings-logo-section > .settings-logo {
+  width: 100%;
+  min-width: 0;
+  margin-top: 0 !important;
+}
 .settings-logo {
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 12px;
+  padding: 10px;
   border: 1px dashed #cbd9e1;
   border-radius: 9px;
   background: #f9fbfc;
@@ -2499,3 +2509,594 @@ body,
   }
 }
 
+
+
+/* =========================================
+   SETTINGS TABS
+========================================= */
+
+.settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px;
+  border-radius: 10px;
+}
+
+/* INACTIVE TAB */
+.settings-tab {
+  min-height: 42px;
+  padding: 10px 22px;
+  border: 1px solid #e2e9e4;
+  border-radius: 7px;
+  background: #f3f6f3;
+  color: #173b48;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* HOVER */
+.settings-tab:hover {
+  background: #e8eee9;
+  color: #173b48;
+  border-color: #cbd8ce;
+}
+
+/* ACTIVE TAB */
+.settings-tab.active {
+  background: #173b48;
+  color: #ffffff;
+  border-color: #173b48;
+  box-shadow: 0 2px 5px rgba(48, 75, 60, 0.15);
+}
+
+@media (max-width: 600px) {
+  .settings-tabs {
+    gap: 6px;
+  }
+
+  .settings-tab {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+}
+
+
+
+
+/* ==========================================
+   HOME SLIDER ADMIN - MAIN
+========================================== */
+
+.home-slider-admin {
+  width: 100%;
+  max-width: 100%;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.home-slider-admin-heading {
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.home-slider-admin-heading h2 {
+  margin: 0;
+  color: #263c30;
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+
+/* ==========================================
+   MAIN LAYOUT - LEFT FORM / RIGHT CARDS
+========================================== */
+
+.home-slider-admin .home-slider-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 22px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.home-slider-admin .home-slider-form {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border: 1px solid #e0e6e1;
+  border-radius: 13px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+
+/* ==========================================
+   FORM TOP ROW - 2 COLUMNS
+   Eyebrow | Title
+   Image    | Description
+========================================== */
+
+.home-slider-admin .home-slider-content-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.home-slider-admin .home-slider-content-row > .settings-field {
+  min-width: 0;
+}
+
+
+/* ==========================================
+   IMAGE + DESCRIPTION ROW
+========================================== */
+
+.home-slider-admin .home-slider-image-field {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.home-slider-admin .home-slider-description-field {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+
+/* ==========================================
+   ALL FIELD STYLES
+========================================== */
+
+.home-slider-admin .settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+}
+
+.home-slider-admin .settings-field label {
+  color: #34483b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-slider-admin .settings-field input,
+.home-slider-admin .settings-field textarea,
+.home-slider-admin .settings-field select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 11px;
+  border: 1px solid #d9e1da;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #263c30;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-slider-admin .settings-field input:focus,
+.home-slider-admin .settings-field textarea:focus,
+.home-slider-admin .settings-field select:focus {
+  border-color: #4f7359;
+  box-shadow: 0 0 0 3px rgba(79, 115, 89, 0.1);
+}
+
+.home-slider-admin .settings-field textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.home-slider-admin .settings-field small {
+  color: #78847b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+/* File input */
+
+.home-slider-admin .home-slider-file-input {
+  padding: 8px !important;
+  font-size: 12px !important;
+}
+
+
+/* Image preview */
+
+.home-slider-admin .home-slider-preview {
+  width: 100%;
+  height: 145px;
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid #e0e6e1;
+  border-radius: 9px;
+  background: #f4f6f4;
+}
+
+.home-slider-admin .home-slider-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
+/* ==========================================
+   BUTTON DETAILS - 2 COLUMNS
+========================================== */
+
+.home-slider-admin .home-slider-buttons-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.home-slider-admin .home-slider-button-group {
+  width: 100%;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e0e6e1;
+  border-radius: 10px;
+  background: #f9fbf9;
+  box-sizing: border-box;
+}
+
+.home-slider-admin .home-slider-button-group h3 {
+  margin: 0 0 12px;
+  color: #304b3c;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.home-slider-admin .home-slider-button-group .settings-field + .settings-field {
+  margin-top: 11px;
+}
+
+
+/* ==========================================
+   DISPLAY ORDER / STATUS
+========================================== */
+
+.home-slider-admin .home-slider-settings-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* ==========================================
+   FORM ACTIONS
+========================================== */
+
+.home-slider-admin .home-slider-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+}
+
+.home-slider-admin .home-slider-actions button {
+  min-height: 39px;
+  padding: 9px 17px;
+  border-radius: 8px;
+}
+
+
+/* ==========================================
+   RIGHT SIDE - EXISTING SLIDES
+========================================== */
+
+.home-slider-admin .home-slider-existing {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.home-slider-admin .home-slider-existing-heading {
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.home-slider-admin .home-slider-existing-heading h2 {
+  margin: 0;
+  color: #263c30;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+
+/* ==========================================
+   SLIDE CARDS - 2 PER ROW
+========================================== */
+
+.home-slider-admin .settings-locations-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  align-content: start;
+  gap: 15px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.home-slider-admin .home-slider-card {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid #e0e6e1;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(38, 60, 48, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.home-slider-admin .home-slider-card:hover {
+  border-color: #bdcbbf;
+  box-shadow: 0 4px 12px rgba(38, 60, 48, 0.08);
+}
+
+.home-slider-admin .home-slider-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+
+/* Card image */
+
+.home-slider-admin .home-slider-card-image {
+  display: block;
+  width: 100%;
+  height: 160px;
+  flex-shrink: 0;
+  object-fit: cover;
+  object-position: center;
+  background: #f2f5f2;
+}
+
+
+/* ==========================================
+   CARD CONTENT - INCREASED SIZE
+========================================== */
+
+.home-slider-admin .home-slider-card-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 9px;
+  min-width: 0;
+  padding: 15px;
+  box-sizing: border-box;
+}
+
+.home-slider-admin .home-slider-card-content h3 {
+  margin: 0;
+  color: #263c30;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.home-slider-admin .home-slider-card-eyebrow {
+  margin: 0;
+  color: #4f7359;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.home-slider-admin .home-slider-card-description {
+  margin: 0;
+  color: #56635a;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+
+/* ==========================================
+   CARD META - ORDER / STATUS
+========================================== */
+
+.home-slider-admin .home-slider-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  color: #69766d;
+  font-size: 12px;
+}
+
+.home-slider-admin .home-slider-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.home-slider-admin .home-slider-status.active {
+  background: #eaf4ec;
+  color: #2f6946;
+}
+
+.home-slider-admin .home-slider-status.inactive {
+  background: #f8ece9;
+  color: #8b4a40;
+}
+
+
+/* ==========================================
+   CARD BUTTON INFORMATION
+========================================== */
+
+.home-slider-admin .home-slider-card-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 3px;
+}
+
+.home-slider-admin .home-slider-card-buttons span {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #f4f7f4;
+  color: #46584c;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+
+/* ==========================================
+   CARD EDIT / DELETE
+========================================== */
+
+.home-slider-admin .home-slider-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding: 0 15px 15px;
+}
+
+.home-slider-admin .home-slider-card-actions button {
+  min-height: 34px;
+  padding: 7px 13px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+
+/* ==========================================
+   EMPTY SLIDES
+========================================== */
+
+.home-slider-admin .settings-locations-list > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed #d9e1da;
+  border-radius: 10px;
+  color: #738077;
+  font-size: 13px;
+}
+
+
+/* Hide old divider */
+
+.home-slider-admin .home-slider-divider {
+  display: none;
+}
+
+
+/* ==========================================
+   TABLET - STACK FORM AND CARDS
+========================================== */
+
+@media (max-width: 1050px) {
+  .home-slider-admin .home-slider-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-slider-admin .home-slider-existing {
+    grid-column: 1;
+  }
+
+  .home-slider-admin .settings-locations-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ==========================================
+   SMALL MOBILE
+========================================== */
+
+@media (max-width: 600px) {
+  .home-slider-admin {
+    padding: 12px;
+  }
+
+  .home-slider-admin .home-slider-form {
+    padding: 13px;
+  }
+
+  .home-slider-admin .home-slider-content-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-slider-admin .home-slider-image-field,
+  .home-slider-admin .home-slider-description-field {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .home-slider-admin .home-slider-buttons-row,
+  .home-slider-admin .home-slider-settings-row,
+  .home-slider-admin .settings-locations-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-slider-admin .home-slider-card-image {
+    height: 190px;
+  }
+}
+
+
+.service-type-card {
+  border: 1px solid #e2e8e4;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafcfb;
+}
+.service-type-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.service-type-card .sub-label {
+  margin-top: 6px;
+  font-weight: 600;
+}

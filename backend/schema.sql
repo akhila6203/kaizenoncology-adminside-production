@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS kaizenoncology CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE kaizenoncology;
+CREATE DATABASE IF NOT EXISTS kimsrenova CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE kimsrenova;
 
 CREATE TABLE IF NOT EXISTS admins (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -53,6 +53,38 @@ CREATE TABLE IF NOT EXISTS services (
   sort_order INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS service_sections (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  service_id INT UNSIGNED NOT NULL,
+  heading VARCHAR(255) NOT NULL,
+  paragraph LONGTEXT NULL,
+  image VARCHAR(255) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_svcsec_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS service_section_points (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  section_id INT UNSIGNED NOT NULL,
+  point_text TEXT NOT NULL,
+  image VARCHAR(255) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_svcpoint_section FOREIGN KEY (section_id) REFERENCES service_sections(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS service_faqs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  service_id INT UNSIGNED NOT NULL,
+  question TEXT NOT NULL,
+  answer LONGTEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_svcfaq_service FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+
+
 
 CREATE TABLE IF NOT EXISTS doctors (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -346,7 +378,7 @@ CREATE TABLE IF NOT EXISTS customers (
 
 
 
--- Run ONCE in kaizenoncology; existing blogs are preserved.
+-- Run ONCE in kimsrenova; existing blogs are preserved.
 -- ALTER TABLE blogs ADD COLUMN speciality_id INT UNSIGNED NULL AFTER category;
 -- ALTER TABLE blogs ADD COLUMN short_description TEXT NULL AFTER content;
 -- ALTER TABLE blogs ADD INDEX idx_blogs_speciality (speciality_id);
@@ -365,8 +397,8 @@ CREATE TABLE IF NOT EXISTS customers (
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
--- Run once in kaizenoncology. Existing tables are not modified.
-USE kaizenoncology;
+-- Run once in kimsrenova. Existing tables are not modified.
+USE kimsrenova;
 
 CREATE TABLE IF NOT EXISTS patient_profiles (
  customer_id INT UNSIGNED PRIMARY KEY,
@@ -469,5 +501,81 @@ CREATE TABLE IF NOT EXISTS patient_activity_logs (
 
 
 
+
+CREATE TABLE IF NOT EXISTS technology_sections (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  technology_id INT UNSIGNED NOT NULL,
+  heading VARCHAR(255) NOT NULL,
+  paragraph LONGTEXT NULL,
+  image VARCHAR(255) NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_techsec_technology FOREIGN KEY (technology_id) REFERENCES technologies(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS technology_section_points (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  section_id INT UNSIGNED NOT NULL,
+  point_text TEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_techpoint_section FOREIGN KEY (section_id) REFERENCES technology_sections(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS technology_faqs (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  technology_id INT UNSIGNED NOT NULL,
+  question TEXT NOT NULL,
+  answer LONGTEXT NOT NULL,
+  sort_order INT NOT NULL DEFAULT 0,
+  CONSTRAINT fk_techfaq_technology FOREIGN KEY (technology_id) REFERENCES technologies(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- CREATE TABLE technology_specialities (
+--     technology_id INT NOT NULL,
+--     speciality_id INT NOT NULL,
+
+--     PRIMARY KEY (technology_id, speciality_id),
+
+--     CONSTRAINT fk_technology_specialities_technology
+--         FOREIGN KEY (technology_id)
+--         REFERENCES technologies(id)
+--         ON DELETE CASCADE,
+
+--     CONSTRAINT fk_technology_specialities_speciality
+--         FOREIGN KEY (speciality_id)
+--         REFERENCES specialities(id)
+--         ON DELETE CASCADE
+-- );
+
+
+-- ALTER TABLE settings
+-- ADD COLUMN logo2 VARCHAR(500) DEFAULT NULL;
+
+
+CREATE TABLE IF NOT EXISTS homepage_slides (
+    id INT NOT NULL AUTO_INCREMENT,
+
+    image VARCHAR(500) DEFAULT NULL,
+    eyebrow VARCHAR(255) DEFAULT NULL,
+    title VARCHAR(500) NOT NULL,
+    description TEXT DEFAULT NULL,
+
+    primary_text VARCHAR(255) DEFAULT NULL,
+    primary_path VARCHAR(500) DEFAULT NULL,
+
+    secondary_text VARCHAR(255) DEFAULT NULL,
+    secondary_path VARCHAR(500) DEFAULT NULL,
+
+    sort_order INT DEFAULT 0,
+
+    status ENUM('active', 'inactive') DEFAULT 'active',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id)
+);
 
 

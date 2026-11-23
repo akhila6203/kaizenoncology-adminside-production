@@ -7,8 +7,12 @@ import { authApi } from '../../api';
 export default function Login() {
   const { login, token } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@hospital.local');
-  const [password, setPassword] = useState('Admin@123');
+
+  // const [email, setEmail] = useState('admin@hospital.local');
+  // const [password, setPassword] = useState('Admin@123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -39,7 +43,7 @@ export default function Login() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h1>Hospital CMS</h1>
+        <h1>KIMS RENOVA Cancer Hospital</h1>
         <p>Sign in to manage website content.</p>
         <form onSubmit={onSubmit}>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />

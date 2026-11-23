@@ -96,7 +96,7 @@ exports.sendHealthEnquiryEmail = async ({ type, data }) => {
     .join("");
 
   return transporter.sendMail({
-    from: `"${process.env.MAIL_FROM_NAME || "Kaizen Oncology"}" <${
+    from: `"${process.env.MAIL_FROM_NAME || "KIMS RENOVA"}" <${
       process.env.MAIL_FROM_EMAIL || process.env.SMTP_USER
     }>`,
     to: adminEmail,
