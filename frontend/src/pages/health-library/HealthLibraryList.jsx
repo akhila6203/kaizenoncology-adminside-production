@@ -19,7 +19,7 @@ import HealthLibraryForm from "./HealthLibraryForm";
 const TABS = [
   ["estimate", "Book Appointments"],
   ["contact", "Contact Form"],
-  ["callback", "Request a Call"],
+  // ["callback", "Request a Call"],
 ];
 
 /* Table columns for each tab: [field key, heading] */
@@ -42,14 +42,14 @@ const COLUMNS = {
     ["message", "Enquiry"],
     ["created_at", "Date"],
   ],
-  callback: [
-    ["patient_name", "Name"],
-    ["phone", "Phone"],
-    ["email", "Email"],
-    ["preferred_time", "Preferred Time"],
-    ["message", "Message"],
-    ["created_at", "Date"],
-  ],
+  // callback: [
+  //   ["patient_name", "Name"],
+  //   ["phone", "Phone"],
+  //   ["email", "Email"],
+  //   ["preferred_time", "Preferred Time"],
+  //   ["message", "Message"],
+  //   ["created_at", "Date"],
+  // ],
 };
 
 const DATE_KEYS = ["created_at", "appointment_date"];

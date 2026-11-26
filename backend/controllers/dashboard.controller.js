@@ -6,6 +6,7 @@ exports.stats = async (req, res, next) => {
       SELECT
         (SELECT COUNT(*) FROM doctors) AS doctors,
         (SELECT COUNT(*) FROM specialities) AS specialities,
+        (SELECT COUNT(*) FROM technologies) AS technologies,
         (SELECT COUNT(*) FROM services) AS services,
         (SELECT COUNT(*) FROM hospitals) AS hospitals,
         (SELECT COUNT(*) FROM health_library) AS health_library,

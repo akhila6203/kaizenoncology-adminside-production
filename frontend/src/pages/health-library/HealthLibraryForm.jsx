@@ -32,7 +32,7 @@ const empty = {
 const names = {
   estimate: "Book Appointment",
   contact: "Contact Enquiry",
-  callback: "Call Request",
+  // callback: "Call Request",
 };
 
 /*
@@ -62,13 +62,13 @@ const fields = {
     ["phone", "Mobile number", "tel"],
     ["message", "How can we help?", "textarea"],
   ],
-  callback: [
-    ["patient_name", "Name", "text"],
-    ["phone", "Phone", "tel"],
-    ["email", "Email", "email"],
-    ["preferred_time", "Preferred time", "text"],
-    ["message", "Message", "textarea"],
-  ],
+  // callback: [
+  //   ["patient_name", "Name", "text"],
+  //   ["phone", "Phone", "tel"],
+  //   ["email", "Email", "email"],
+  //   ["preferred_time", "Preferred time", "text"],
+  //   ["message", "Message", "textarea"],
+  // ],
 };
 
 const REQUIRED = ["patient_name", "phone"];

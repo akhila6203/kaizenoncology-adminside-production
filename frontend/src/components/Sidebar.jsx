@@ -31,7 +31,7 @@ const links = [
   // { to: "/partners", label: "Partners", Icon: HandshakeOutlinedIcon },
   //   { to: "/services", label: "Services", Icon: MiscellaneousServicesOutlinedIcon },
   // { to: "/hospitals", label: "Hospitals / Locations", Icon: ApartmentOutlinedIcon },
-  { to: "/health-library", label: "Health Library", Icon: MenuBookOutlinedIcon },
+  { to: "/health-library", label: "Appointments", Icon: MenuBookOutlinedIcon },
   { to: "/our-stories", label: "Our Stories", Icon: AutoStoriesOutlinedIcon },
   { to: "/blogs", label: "Blogs", Icon: ArticleOutlinedIcon },
   { to: "/faqs", label: "FAQs", Icon: HelpOutlineOutlinedIcon },

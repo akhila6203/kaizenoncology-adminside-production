@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 const cards = [
    ['doctors', 'Doctors'],
    ['specialities', 'Specialities'],
-  //  ['services', 'Services'],
+   ['services', 'Services'],
+   ['technologies', 'Our Technology'],
   //  ['hospitals', 'Hospitals'],
   ['health_library', 'Health Library'],
    ['our_stories', 'Our Stories'],
